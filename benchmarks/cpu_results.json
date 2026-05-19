@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "date": "2026-05-19T18:40:41.711909",
+    "platform": "x86_64",
+    "python": "3.13.11",
+    "torch": "2.11.0+cu130",
+    "device": "cpu",
+    "n_warmup": 20,
+    "n_steps": 200,
+    "dx_mm": 1.0
+  },
+  "cuda_meep_cpu": [
+    {
+      "N": 64,
+      "mcells_s": 3.13,
+      "ms_step": 1.3096
+    },
+    {
+      "N": 128,
+      "mcells_s": 11.9,
+      "ms_step": 1.377
+    },
+    {
+      "N": 256,
+      "mcells_s": 28.42,
+      "ms_step": 2.3057
+    },
+    {
+      "N": 512,
+      "mcells_s": 24.13,
+      "ms_step": 10.8626
+    }
+  ],
+  "meep_cpu": [
+    {
+      "N": 64,
+      "mcells_s": 18.19,
+      "ms_step": 0.2252
+    },
+    {
+      "N": 128,
+      "mcells_s": 20.23,
+      "ms_step": 0.8098
+    },
+    {
+      "N": 256,
+      "mcells_s": 15.32,
+      "ms_step": 4.2766
+    },
+    {
+      "N": 512,
+      "mcells_s": 16.07,
+      "ms_step": 16.3117
+    }
+  ]
+}
