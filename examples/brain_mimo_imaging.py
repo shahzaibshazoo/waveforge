@@ -83,7 +83,23 @@ def build_brain_map(grid: YeeGrid, include_tumor: bool) -> tuple[torch.Tensor, t
         )
     print(mat_map.summary())
     Ca, Cb = mat_map.build()
-    return Ca, Cb
+
+    # Build eps_r map manually for visualization (clear contrast between tissues)
+    Nx, Ny = grid.Nx, grid.Ny
+    I = torch.arange(Nx, dtype=torch.float32).unsqueeze(1).expand(Nx, Ny)
+    J = torch.arange(Ny, dtype=torch.float32).unsqueeze(0).expand(Nx, Ny)
+    eps_map = torch.ones(Nx, Ny) * 1.0   # free space
+    cx, cy = float(CENTER[0]), float(CENTER[1])
+    r2_skull  = SKULL_OUTER_R ** 2
+    r2_brain  = SKULL_INNER_R ** 2
+    r2_tumor  = TUMOR_R ** 2
+    tc_x, tc_y = float(TUMOR_CENTER[0]), float(TUMOR_CENTER[1])
+    eps_map[((I - cx)**2 + (J - cy)**2) <= r2_skull] = 8.0
+    eps_map[((I - cx)**2 + (J - cy)**2) <= r2_brain] = 40.0
+    if include_tumor:
+        eps_map[((I - tc_x)**2 + (J - tc_y)**2) <= r2_tumor] = 55.0
+
+    return Ca, Cb, eps_map
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +296,7 @@ def main() -> None:
     # Healthy brain simulations (no tumor)
     # ----------------------------------------------------------------
     print("\nRunning healthy brain simulations (no tumor)...")
-    Ca_healthy, Cb_healthy = build_brain_map(grid, include_tumor=False)
+    Ca_healthy, Cb_healthy, _eps_healthy = build_brain_map(grid, include_tumor=False)
     S_healthy = run_mimo(grid, Ca_healthy, Cb_healthy, antenna_positions, N_STEPS)
     print(f"  Healthy simulations done. Shape: {S_healthy.shape}")
 
@@ -288,7 +304,7 @@ def main() -> None:
     # Tumor brain simulations
     # ----------------------------------------------------------------
     print("\nRunning tumor brain simulations...")
-    Ca_tumor, Cb_tumor = build_brain_map(grid, include_tumor=True)
+    Ca_tumor, Cb_tumor, eps_tumor = build_brain_map(grid, include_tumor=True)
     S_tumor = run_mimo(grid, Ca_tumor, Cb_tumor, antenna_positions, N_STEPS)
     print(f"  Tumor simulations done. Shape: {S_tumor.shape}")
 
@@ -314,18 +330,26 @@ def main() -> None:
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))
     fig.suptitle('GPU-MEEP: MIMO Brain Tumor Detection (1 GHz)', fontsize=14)
 
-    # Panel 1: material map (Ca shows eps contrast)
-    ca_np = Ca_tumor[:, :, 0].cpu().numpy().T
+    # Panel 1: eps_r material map — clear contrast between all 4 regions
+    # (Ca map has only 0.003 range between brain/tumor — invisible)
+    eps_np = eps_tumor.numpy().T   # (Ny, Nx) for imshow
+    from matplotlib.colors import BoundaryNorm
+    from matplotlib.cm import get_cmap
+    bounds  = [0, 5, 15, 45, 60]          # region boundaries for eps_r
+    labels  = ['Free space\n(ε=1)', 'Skull\n(ε=8)', 'Brain\n(ε=40)', 'Tumor\n(ε=55)']
+    cmap4   = plt.colormaps.get_cmap('tab10').resampled(4)
+    norm4   = BoundaryNorm(bounds, cmap4.N)
     im0 = axes[0, 0].imshow(
-        ca_np, origin='lower', cmap='viridis',
+        eps_np, origin='lower', cmap=cmap4, norm=norm4,
         extent=[0, NX * DX * 1e3, 0, NY * DY * 1e3],
     )
-    axes[0, 0].set_title('Material Map (Ca coefficient)')
+    cbar0 = plt.colorbar(im0, ax=axes[0, 0], ticks=[2.5, 10, 42.5, 57.5])
+    cbar0.ax.set_yticklabels(['Free space\n(ε=1)', 'Skull\n(ε=8)', 'Brain\n(ε=40)', 'Tumor\n(ε=55)'], fontsize=7)
+    axes[0, 0].set_title('Material Map (Relative Permittivity εᵣ)')
     axes[0, 0].set_xlabel('x (mm)')
     axes[0, 0].set_ylabel('y (mm)')
-    plt.colorbar(im0, ax=axes[0, 0])
     for ai, aj in antenna_positions:
-        axes[0, 0].plot(ai * DX * 1e3, aj * DY * 1e3, 'w^', markersize=4)
+        axes[0, 0].plot(ai * DX * 1e3, aj * DY * 1e3, 'w^', markersize=5, markeredgecolor='k', markeredgewidth=0.5)
 
     # Panel 2: DAS backprojection image
     vmax = float(np.abs(image).max())
