@@ -1,0 +1,10 @@
+# Core
+torch>=2.0
+numpy>=1.24
+matplotlib>=3.7
+
+# Testing
+pytest>=7.4
+
+# Optional: Meep comparison benchmark
+# meep  (install separately via conda: conda install -c conda-forge pymeep)
