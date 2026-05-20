@@ -350,13 +350,13 @@ class FDTD2D:
         # Final sync + telemetry update after all steps complete.
         if is_cuda:
             torch.cuda.synchronize()
-        elapsed = time.perf_counter() - t_start
-        self.elapsed_time += elapsed
+        total_elapsed = time.perf_counter() - t_start
+        self.elapsed_time += total_elapsed
         steps_done = self.steps_completed - start_steps
-        if self.elapsed_time > 0.0:
+        if total_elapsed > 0.0:
             self.mcells_per_second = (
                 steps_done * self._grid.Nx * self._grid.Ny
-            ) / elapsed / 1e6
+            ) / total_elapsed / 1e6
 
     # ------------------------------------------------------------------
     # Reset

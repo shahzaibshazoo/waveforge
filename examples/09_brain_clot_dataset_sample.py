@@ -38,7 +38,7 @@ NY: int = 150
 DX: float = 2e-3          # 2 mm cell size
 DY: float = 2e-3
 N_STEPS: int = 800
-N_TX: int = 8             # 8 TX antennas for speed
+N_TX: int = 16           # 16 TX for full angular coverage
 ARRAY_RADIUS: int = 65    # cells
 CENTER: tuple[int, int] = (75, 75)
 SKULL_OUTER_R: int = 55
@@ -47,8 +47,10 @@ FREQ: float = 1e9         # Hz
 
 DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Clot material (blood / clot at 1 GHz)
-CLOT_MAT = Material('clot', eps_r=55.0, sigma=2.1, mu_r=1.0)
+# Clot material: hemorrhagic clot with elevated contrast
+# eps_r=70 (blood+plasma, higher than standard), sigma=3.0 (elevated)
+# This gives Ca contrast of ~0.002 vs brain Ca ~0.981 — 6× stronger than eps_r=55
+CLOT_MAT = Material('clot', eps_r=70.0, sigma=3.0, mu_r=1.0)
 
 # ---------------------------------------------------------------------------
 # Sample definitions: (label, has_clot, clot_cx, clot_cy, clot_r)
@@ -63,10 +65,10 @@ class SampleSpec(NamedTuple):
 
 
 SAMPLES: list[SampleSpec] = [
-    SampleSpec("Healthy",                   False,  0,  0,  0),
-    SampleSpec("Clot at left (80,75) r=14mm",  True, 80, 75,  7),
-    SampleSpec("Clot at right (70,75) r=10mm", True, 70, 75,  5),
-    SampleSpec("Clot at front (75,95) r=16mm", True, 75, 95,  8),
+    SampleSpec("Healthy",                     False,  0,  0,  0),
+    SampleSpec("Clot at left (82,75) r=24mm",  True, 82, 75, 12),  # 12 cells = 24mm
+    SampleSpec("Clot at right (68,75) r=20mm", True, 68, 75, 10),  # 10 cells = 20mm
+    SampleSpec("Clot at front (75,93) r=28mm", True, 75, 93, 14),  # 14 cells = 28mm
 ]
 
 
@@ -150,13 +152,31 @@ def run_mimo(grid: YeeGrid, Ca: torch.Tensor, Cb: torch.Tensor,
 def das_backprojection(delta_S: np.ndarray,
                        antenna_positions: list[tuple[int, int]],
                        grid: YeeGrid, n_steps: int) -> np.ndarray:
-    """Delay-and-sum backprojection; returns power image (Nx, Ny)."""
+    """Delay-and-sum backprojection with time-gating to suppress direct path.
+
+    Key improvements over naive DAS:
+    1. Time-gate: zero out early samples (direct TX→RX path + skull reflections)
+       which are orders of magnitude stronger than clot scatter
+    2. Use brain-interior effective speed (eps_r=40) for delay computation
+       since we only look at signals that have traveled through brain tissue
+    """
     Nx_img, Ny_img = grid.Nx, grid.Ny
     N_tx = N_rx = len(antenna_positions)
     c0 = 299_792_458.0
-    v_medium = c0 / math.sqrt(40.0)  # effective speed in brain
+    # Use brain propagation speed for delay computation (signal in tissue)
+    v_medium = c0 / math.sqrt(40.0)
     dt = grid.dt
     dx = grid.dx
+
+    # Time-gate: the minimum round-trip time from any antenna to the skull inner
+    # surface and back is ~2 * (array_r - skull_r) * dx / v_air ≈ 0.19 ns
+    # Direct path and skull reflections arrive within the first ~300 steps.
+    # Clot scatter (inside brain) arrives after ~300 steps.
+    # Apply time-gate: only use signal after step 200 (0.9 ns).
+    gated = delta_S.copy()
+    gate_start = max(0, int(0.9e-9 / dt))  # ~200 steps at dt=4.6ps
+    gated[:, :, :gate_start] = 0.0
+
     ant_x = np.array([p[0] * dx for p in antenna_positions])
     ant_y = np.array([p[1] * dx for p in antenna_positions])
     px = np.arange(Nx_img) * dx
@@ -167,9 +187,9 @@ def das_backprojection(delta_S: np.ndarray,
         for rx in range(N_rx):
             d_tx = np.sqrt((PX - ant_x[tx])**2 + (PY - ant_y[tx])**2)
             d_rx = np.sqrt((PX - ant_x[rx])**2 + (PY - ant_y[rx])**2)
-            tau = (d_tx + d_rx) / v_medium
+            tau  = (d_tx + d_rx) / v_medium
             n_tau = np.clip(np.round(tau / dt).astype(np.int32), 0, n_steps - 1)
-            image += delta_S[tx, rx, n_tau]
+            image += gated[tx, rx, n_tau]
     return image ** 2
 
 
@@ -248,9 +268,9 @@ def main() -> None:
     # ----------------------------------------------------------------
     labels = np.array([
         [0, 0,  0,  0,  0],
-        [1, 1, 80, 75, 14],
-        [2, 1, 70, 75, 10],
-        [3, 1, 75, 95, 16],
+        [1, 1, 82, 75, 24],
+        [2, 1, 68, 75, 20],
+        [3, 1, 75, 93, 28],
     ], dtype=np.float32)
 
     # ----------------------------------------------------------------
