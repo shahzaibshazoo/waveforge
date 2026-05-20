@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "date": "2026-05-20T11:11:00.578388",
+    "gpu": "Tesla T4",
+    "platform": "Google Colab T4",
+    "torch": "2.10.0+cu128",
+    "n_warmup": 30,
+    "n_steps": 300,
+    "measured": true
+  },
+  "waveforge_gpu": [
+    {
+      "N": 64,
+      "mcells_s": 5.85,
+      "ms_step": 0.7001
+    },
+    {
+      "N": 128,
+      "mcells_s": 14.0,
+      "ms_step": 1.1699
+    },
+    {
+      "N": 256,
+      "mcells_s": 71.23,
+      "ms_step": 0.9201
+    },
+    {
+      "N": 512,
+      "mcells_s": 232.32,
+      "ms_step": 1.1284
+    }
+  ],
+  "waveforge_cpu": [
+    {
+      "N": 64,
+      "mcells_s": 3.13,
+      "ms_step": 1.3096
+    },
+    {
+      "N": 128,
+      "mcells_s": 11.9,
+      "ms_step": 1.377
+    },
+    {
+      "N": 256,
+      "mcells_s": 28.42,
+      "ms_step": 2.3057
+    },
+    {
+      "N": 512,
+      "mcells_s": 24.13,
+      "ms_step": 10.8626
+    }
+  ],
+  "meep_cpu": [
+    {
+      "N": 64,
+      "mcells_s": 18.19,
+      "ms_step": 0.2252
+    },
+    {
+      "N": 128,
+      "mcells_s": 20.23,
+      "ms_step": 0.8098
+    },
+    {
+      "N": 256,
+      "mcells_s": 15.32,
+      "ms_step": 4.2766
+    },
+    {
+      "N": 512,
+      "mcells_s": 16.07,
+      "ms_step": 16.3117
+    }
+  ],
+  "speedup_vs_meep": {
+    "64": 0.32,
+    "128": 0.69,
+    "256": 4.65,
+    "512": 14.46
+  }
+}
