@@ -386,6 +386,10 @@ def main() -> None:
     print(f"Dataset saved to: {dataset_path}")
     print(f"Plot saved to:    {plot_path}")
     print("=" * 65)
+    # Machine-readable throughput for benchmark notebook
+    _total_steps = len(SAMPLES) * N_TX * N_STEPS
+    _bench_mc = _total_steps * NX * NY / max(t_total, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
 
 
 if __name__ == '__main__':

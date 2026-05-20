@@ -291,5 +291,8 @@ def main():
     print(f"  DAS localization error: {err:.1f} mm (tumor r={TUMOR_R*DX*1e3:.0f}mm)")
     print(f"  Breast window: {BREAST_A*2*DX*1e3:.0f}×{BREAST_B*2*DX*1e3:.0f}mm")
     print(f"{'='*60}")
+    _total_steps = N_TX * 2 * N_STEPS  # healthy + tumor runs
+    _bench_mc = _total_steps * NX * NY / max(elapsed, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
 
 if __name__ == '__main__': main()

@@ -68,13 +68,17 @@ def main() -> None:
     sim = FDTD2D(grid, fields, boundary, sources, n_check=50)
 
     # Step F — Run with progress
+    import time as _time
     print("Running simulation...")
+    _t0 = _time.perf_counter()
     sim.run(N_STEPS, verbose=True)
+    _bench_mc = N_STEPS * NX * NY / max(_time.perf_counter() - _t0, 1e-9) / 1e6
     print(
         f"Done. {sim.steps_completed} steps, "
         f"{sim.mcells_per_second:.1f} Mcells/s, "
         f"field_max={sim.last_field_max:.3e}"
     )
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
 
     # Step G — Save Hz snapshot
     OUTPUT_DIR.mkdir(exist_ok=True)
