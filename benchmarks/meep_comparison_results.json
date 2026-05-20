@@ -1,0 +1,86 @@
+{
+  "free_space": {
+    "cuda_meep": {
+      "mcells_s": 9.2508,
+      "ms_step": 1.771082
+    },
+    "meep": {
+      "mcells_s": 30.2887,
+      "ms_step": 0.540928
+    },
+    "grid": "128x128",
+    "notes": "128x128, pulse propagation"
+  },
+  "dielectric_slab": {
+    "cuda_meep": {
+      "mcells_s": 6.0555,
+      "ms_step": 2.11377
+    },
+    "meep": {
+      "mcells_s": 31.2331,
+      "ms_step": 0.409822
+    },
+    "grid": "200x64",
+    "notes": "200x64, eps_r=4 slab"
+  },
+  "waveguide": {
+    "cuda_meep": {
+      "mcells_s": 5.8055,
+      "ms_step": 2.066994
+    },
+    "meep": {
+      "mcells_s": 30.8316,
+      "ms_step": 0.389211
+    },
+    "grid": "200x60",
+    "notes": "200x60, guided mode 5GHz"
+  },
+  "cylinder_scatter": {
+    "cuda_meep": {
+      "mcells_s": 8.9685,
+      "ms_step": 2.508775
+    },
+    "meep": {
+      "mcells_s": 23.1618,
+      "ms_step": 0.971429
+    },
+    "grid": "150x150",
+    "notes": "150x150, cylinder eps_r=9"
+  },
+  "through_wall": {
+    "cuda_meep": {
+      "mcells_s": 8.7586,
+      "ms_step": 2.283471
+    },
+    "meep": {
+      "mcells_s": 36.7721,
+      "ms_step": 0.543891
+    },
+    "grid": "200x100",
+    "notes": "200x100, concrete wall"
+  },
+  "interference": {
+    "cuda_meep": {
+      "mcells_s": 7.7873,
+      "ms_step": 2.10393
+    },
+    "meep": {
+      "mcells_s": 35.2031,
+      "ms_step": 0.465414
+    },
+    "grid": "128x128",
+    "notes": "128x128, two sources 2.4GHz"
+  },
+  "tissue_layers": {
+    "cuda_meep": {
+      "mcells_s": 8.9706,
+      "ms_step": 2.229517
+    },
+    "meep": {
+      "mcells_s": 28.1315,
+      "ms_step": 0.710948
+    },
+    "grid": "250x80",
+    "notes": "250x80, bio tissue"
+  }
+}
