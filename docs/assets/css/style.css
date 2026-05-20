@@ -363,10 +363,14 @@ ul { list-style: none; }
   z-index: 0;
 }
 
-#wave-canvas {
+#particle-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.14;
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .hero-content {

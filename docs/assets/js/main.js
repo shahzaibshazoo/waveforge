@@ -8,7 +8,7 @@
    1. PARTICLE SYSTEM  — EM wave visualization in hero canvas
    ───────────────────────────────────────────────────────────────────────── */
 (function initParticles() {
-  const canvas = document.getElementById('wave-canvas');
+  const canvas = document.getElementById('particle-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
@@ -152,7 +152,7 @@
    2. TYPED TEXT ANIMATION
    ───────────────────────────────────────────────────────────────────────── */
 (function initTyped() {
-  const el = document.querySelector('.hero-subtitle');
+  const el = document.getElementById('typed-text');
   if (!el) return;
 
   const phrases = [
