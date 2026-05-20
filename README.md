@@ -24,24 +24,93 @@ Designed as a high-performance alternative to Meep for microwave imaging, MIMO r
 | 256² | 94 Mcells/s   | 28 Mcells/s   | 15 Mcells/s | **6.0×** |
 | 512² | 350 Mcells/s  | 24 Mcells/s   | 16 Mcells/s | **21.8×** |
 
-> **At 512² grid: 21.8× faster than Meep on a free Colab T4 GPU.**  
-> An A100 (2 TB/s HBM vs T4's 300 GB/s) projects to ~140× at 512², and more at 1024²+.
+> **At 512² grid: 21.8× faster than Meep on a free Colab T4 GPU.**
 
-**Why GPU loses at small grids:** CUDA kernel launch overhead (~5μs) dominates when the grid is tiny (4K cells).  
-GPU wins decisively at 256²+ where the 2,560 CUDA cores are fully saturated.
+**CPU-only comparison (all scenarios, laptop):**
+
+![Meep Comparison](assets/simulations/meep_comparison.png)
 
 ---
 
-## Brain Tumor Detection (MIMO Microwave Imaging)
+## Simulation Examples
 
-16-antenna circular array, 1 GHz, delay-and-sum backprojection:
+### 02 — Dielectric Slab: Reflection & Transmission
 
-![Brain MIMO Imaging](assets/brain_mimo_imaging.png)
+![Dielectric Slab](assets/simulations/02_dielectric_slab.png)
 
-- **Top-left:** εᵣ material map — free space (1), skull (8), brain (40), tumor (55)
-- **Top-right:** DAS backprojection — bright spot correctly localizes the 12mm tumor
-- **Bottom-left:** Scattered signal energy — tumor response arrives at ~3 ns
-- **Bottom-right:** TX0→RX8 signal comparison — healthy vs tumor (difference ×10 shown)
+Gaussian pulse hitting a glass slab (εᵣ=4). Analytical prediction: R=11.1%, T=88.9%. Simulation confirms both values.
+
+---
+
+### 03 — Parallel-Plate Waveguide
+
+![Waveguide](assets/simulations/03_waveguide.png)
+
+5 GHz sinusoidal source between PEC walls. Guided mode propagates since f=5 GHz > f_c=2.5 GHz. Mode pattern clearly visible.
+
+---
+
+### 04 — Cylinder Radar Cross Section
+
+![Scattering Cylinder](assets/simulations/04_scattering_cylinder.png)
+
+Plane wave scattering from a dielectric cylinder (εᵣ=9, r=15mm). Backscatter/forward ratio = 1.53. 8 detectors on ring record scattered field in all directions.
+
+---
+
+### 05 — Through-Wall Radar
+
+![Through Wall Radar](assets/simulations/05_through_wall_radar.png)
+
+1 GHz pulse penetrating a concrete wall (εᵣ=6, σ=0.05 S/m) and scattering off a hidden conductive target. Return echo visible at step 500. Wall loss ≈ −9.2 dB.
+
+---
+
+### 06 — WiFi Multipath Interference (2.4 GHz)
+
+![Multipath Interference](assets/simulations/06_multipath_interference.png)
+
+Two coherent sources at 2.4 GHz creating standing wave pattern. Fringe spacing = λ/2 = 62mm. Time-averaged |Hz|² reveals the interference structure.
+
+---
+
+### 07 — Microwave Tissue Penetration
+
+![Tissue Penetration](assets/simulations/07_tissue_penetration.png)
+
+1 GHz pulse through skin (δ=13mm) → fat (δ=71mm) → muscle (δ=12mm). Progressive attenuation log-curve matches analytical skin depths.
+
+---
+
+### 08 — Automotive EV Radar (10 GHz ULA)
+
+![EV Radar ULA](assets/simulations/08_ev_radar_ula.png)
+
+8-element Uniform Linear Array at 10 GHz. Cylinder target at 120° from boresight. Angular resolution ≈ λ/(N·d) = 14.3°. Delay-and-sum beamforming angular spectrum shown.
+
+---
+
+### 09 — Brain Clot Detection: 4-Sample Dataset
+
+![Brain Clot Dataset](assets/simulations/09_brain_clot_dataset_sample.png)
+
+16-antenna MIMO array, 1 GHz. Four samples: healthy brain + 3 clot positions (left hemisphere, right hemisphere, frontal lobe). DAS backprojection localizes frontal clot to within 2mm.
+
+---
+
+### 10 — Breast Tumor MIMO Imaging
+
+![Breast Tumor MIMO](assets/simulations/10_breast_tumor_mimo.png)
+
+200×200 grid, elliptical breast phantom: skin/adipose/fibroglandular/tumor layers. 16 TX antennas, 1 GHz. DAS localization error: **5.4mm** (tumor radius=12mm). Breast imaging advantage: Adipose→Tumor contrast Δεᵣ=50 vs brain-clot Δεᵣ=15 (3.3× stronger signal).
+
+---
+
+### Brain MIMO Imaging (Full 16-TX)
+
+![Brain MIMO](assets/brain_mimo_imaging.png)
+
+16-antenna circular array, 150×150 grid. DAS reconstruction correctly localizes 12mm tumor. Material map shows skull/brain/tumor clearly.
 
 ---
 
@@ -49,13 +118,13 @@ GPU wins decisively at 256²+ where the 2,560 CUDA cores are fully saturated.
 
 - GPU-accelerated FDTD via PyTorch tensor ops — no Python loops over spatial indices
 - 2D TM mode: {Ex, Ey, Hz} with correct Yee-grid staggering and leapfrog
-- Lossy dispersive materials — per-cell εᵣ, σ coefficients (skull, brain, tumor at 1 GHz)
+- Lossy dispersive materials — per-cell εᵣ, σ (skull, brain, adipose, tumor)
 - First-order Mur absorbing boundary conditions
-- CPML coefficient scaffold (ready for Phase 2)
+- CPML coefficient scaffold (dual-staggered E/H, ready for Phase 2)
 - MIMO circular array imaging — delay-and-sum backprojection
 - Batch simulation support (multiple simultaneous TX runs)
 - Real-time visualization and MP4/GIF animation export
-- 21-test physics verification suite (CFL, Faraday/Ampere signs, propagation, absorption)
+- 21-test physics verification suite
 
 ---
 
@@ -63,13 +132,11 @@ GPU wins decisively at 256²+ where the 2,560 CUDA cores are fully saturated.
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shahzaibshazoo/cuda-meep/blob/main/notebooks/colab_benchmark.ipynb)
 
-1. Click the badge above
-2. Runtime → Change runtime type → **T4 GPU**
-3. Run all cells — benchmarks + brain tumor demo run automatically
+1. Click the badge → Runtime → **T4 GPU** → Run all cells
 
 ---
 
-## Local Installation
+## Installation
 
 ```bash
 git clone https://github.com/shahzaibshazoo/cuda-meep.git
@@ -79,69 +146,20 @@ pip install torch numpy matplotlib pytest
 
 ---
 
-## Basic Usage
-
-```python
-import sys
-sys.path.insert(0, 'src')
-from core import YeeGrid, FieldSet, MurABC, GaussianPulse, PointSource, SourceCollection, FDTD2D
-
-# Grid: 512×512, 1mm cells, CUDA
-grid     = YeeGrid(512, 512, dx=1e-3, dy=1e-3, device='cuda')
-fields   = FieldSet(grid)
-boundary = MurABC(grid, fields.Hz)
-
-# Gaussian pulse source at center
-pulse   = GaussianPulse(amplitude=1.0, sigma=30*grid.dt)
-src     = PointSource(pulse, i=256, j=256, component='Hz', grid=grid, N_steps=1000)
-sources = SourceCollection([src])
-
-sim = FDTD2D(grid, fields, boundary, sources)
-sim.run(1000, verbose=True)
-
-print(f"Throughput: {sim.mcells_per_second:.0f} Mcells/s")
-# → ~350 Mcells/s on Tesla T4
-```
-
----
-
-## Lossy Materials (Brain Imaging)
-
-```python
-from core import MaterialMap, TISSUE_LIBRARY
-
-mat_map = MaterialMap(grid, default=TISSUE_LIBRARY['free_space'])
-mat_map.add_circle(center=(75,75), radius=55, material=TISSUE_LIBRARY['skull'])
-mat_map.add_circle(center=(75,75), radius=51, material=TISSUE_LIBRARY['brain'])
-mat_map.add_circle(center=(95,75), radius=6,  material=TISSUE_LIBRARY['tumor'])
-Ca, Cb = mat_map.build()
-
-sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)
-```
-
----
-
-## Brain Tumor Detection Example
+## Run All Examples
 
 ```bash
-python examples/brain_mimo_imaging.py
-# Runs 32 FDTD simulations (16 TX healthy + 16 TX with tumor)
-# Saves: examples/output/brain_mimo_imaging.png
-```
-
----
-
-## Run Benchmarks
-
-**Local CPU (requires pymeep):**
-```bash
-conda run -n pymeep python benchmarks/cpu_benchmark.py
-# Saves: benchmarks/cpu_results.json
-```
-
-**GPU vs CPU vs Meep comparison:**
-```bash
-# Open notebooks/colab_benchmark.ipynb on Colab with T4 GPU
+python examples/basic_2d_wave.py           # free-space pulse
+python examples/02_dielectric_slab.py      # reflection/transmission
+python examples/03_waveguide.py            # guided mode
+python examples/04_scattering_cylinder.py  # radar cross section
+python examples/05_through_wall_radar.py   # through-wall detection
+python examples/06_multipath_interference.py # WiFi interference
+python examples/07_tissue_penetration.py   # bio-tissue attenuation
+python examples/08_ev_radar_ula.py         # automotive radar
+python examples/09_brain_clot_dataset_sample.py  # brain clot dataset
+python examples/10_breast_tumor_mimo.py    # breast tumor imaging
+python examples/brain_mimo_imaging.py      # full brain MIMO
 ```
 
 ---
@@ -156,21 +174,14 @@ cuda-meep/
 │   ├── materials.py     # Per-cell εᵣ, σ → Ca/Cb FDTD coefficients
 │   ├── sources.py       # Gaussian, Ricker, Sinusoidal sources
 │   ├── boundaries.py    # Mur ABC + dual-staggered CPML scaffold
-│   └── fdtd2d.py        # 2D TM FDTD engine (Maxwell, Yee leapfrog)
+│   └── fdtd2d.py        # 2D TM FDTD engine
 ├── src/visualization/
 │   └── plot2d.py        # Field snapshots + FuncAnimation
-├── examples/
-│   ├── basic_2d_wave.py         # Free-space propagation
-│   └── brain_mimo_imaging.py    # Brain tumor detection
-├── tests/
-│   └── test_fdtd2d.py           # 21 physics + stability tests
-├── benchmarks/
-│   ├── benchmark_gpu_vs_cpu.py  # Throughput scaling
-│   ├── cpu_benchmark.py         # Local Meep comparison
-│   └── cpu_results.json         # Pre-measured CPU results
-├── notebooks/
-│   └── colab_benchmark.ipynb    # GPU vs Meep notebook
-└── assets/                      # Plots for README
+├── examples/            # 10 simulation scenarios
+├── tests/               # 21 physics tests
+├── benchmarks/          # GPU vs CPU vs Meep comparisons
+├── notebooks/           # Colab GPU benchmark notebook
+└── assets/              # Plots and simulation outputs
 ```
 
 ---
@@ -178,24 +189,19 @@ cuda-meep/
 ## Tests
 
 ```bash
-pytest tests/test_fdtd2d.py -v
-# 21/21 passed
+pytest tests/test_fdtd2d.py -v   # 21/21 passed
 ```
-
-Tests cover: CFL stability, Yee staggering, Faraday/Ampere sign correctness,
-energy propagation, Mur absorption, batch dimension safety, telemetry accuracy.
 
 ---
 
 ## Roadmap
 
-- [ ] CPML full implementation (psi field updates)
-- [ ] TFSF plane wave source (far-field radar scenarios)
+- [ ] CPML full psi field updates
+- [ ] TFSF plane wave source
 - [ ] Near-to-far field transform
-- [ ] 3D extension (Ez, Hx, Hy → full 3D TM/TE)
-- [ ] Differentiable physics (adjoint method for inverse design)
-- [ ] Multi-GPU domain decomposition
-- [ ] Triton kernel fusion for additional 2× speedup
+- [ ] 3D extension
+- [ ] Differentiable physics (adjoint method)
+- [ ] 10K brain/breast dataset generator
 
 ---
 
