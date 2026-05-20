@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "date": "2026-05-20T13:25:24.784446",
+    "gpu": "Tesla T4",
+    "platform": "Google Colab",
+    "torch": "2.10.0+cu128",
+    "device": "cuda"
+  },
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "total_time_s": 134.0,
+    "peak_mcells_s": 41.2
+  },
+  "examples": [
+    {
+      "name": "01_basic_wave",
+      "desc": "128x128 free-space pulse",
+      "status": "OK",
+      "time_s": 10.3,
+      "mcells_s": 6.5,
+      "grid": "128x128",
+      "steps": 500
+    },
+    {
+      "name": "02_dielectric_slab",
+      "desc": "200x64  glass slab R/T",
+      "status": "OK",
+      "time_s": 5.1,
+      "mcells_s": 11.7,
+      "grid": "200x64",
+      "steps": 800
+    },
+    {
+      "name": "03_waveguide",
+      "desc": "200x60  guided mode 5GHz",
+      "status": "OK",
+      "time_s": 4.4,
+      "mcells_s": 14.3,
+      "grid": "200x60",
+      "steps": 1000
+    },
+    {
+      "name": "04_scattering",
+      "desc": "150x150 cylinder RCS",
+      "status": "OK",
+      "time_s": 4.7,
+      "mcells_s": 23.3,
+      "grid": "150x150",
+      "steps": 600
+    },
+    {
+      "name": "05_through_wall",
+      "desc": "200x100 through-wall radar",
+      "status": "OK",
+      "time_s": 5.5,
+      "mcells_s": 16.9,
+      "grid": "200x100",
+      "steps": 600
+    },
+    {
+      "name": "06_interference",
+      "desc": "128x128 WiFi 2.4GHz",
+      "status": "OK",
+      "time_s": 4.4,
+      "mcells_s": 19.0,
+      "grid": "128x128",
+      "steps": 800
+    },
+    {
+      "name": "07_tissue",
+      "desc": "250x80  bio-tissue layers",
+      "status": "OK",
+      "time_s": 5.8,
+      "mcells_s": 14.3,
+      "grid": "250x80",
+      "steps": 800
+    },
+    {
+      "name": "08_ev_radar",
+      "desc": "200x200 EV ULA 10GHz",
+      "status": "OK",
+      "time_s": 4.6,
+      "mcells_s": 39.7,
+      "grid": "200x200",
+      "steps": 600
+    },
+    {
+      "name": "09_brain_clot",
+      "desc": "150x150 brain MIMO x16",
+      "status": "OK",
+      "time_s": 54.7,
+      "mcells_s": 22.2,
+      "grid": "150x150",
+      "steps": 12800
+    },
+    {
+      "name": "10_breast_tumor",
+      "desc": "200x200 breast MIMO x16",
+      "status": "OK",
+      "time_s": 34.5,
+      "mcells_s": 41.2,
+      "grid": "200x200",
+      "steps": 16000
+    }
+  ]
+}
