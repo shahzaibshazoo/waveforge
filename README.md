@@ -17,14 +17,17 @@ Designed as a high-performance alternative to Meep for microwave imaging, MIMO r
 
 **Measured results (Tesla T4 GPU, Colab free tier):**
 
-| Grid | WaveForge GPU | WaveForge CPU | Meep CPU | **GPU / Meep** |
-|------|:-------------:|:-------------:|:--------:|:--------------:|
-| 64²  | 24 Mcells/s   | 3 Mcells/s    | 18 Mcells/s | 0.2× |
-| 128² | 25 Mcells/s   | 12 Mcells/s   | 20 Mcells/s | 1.0× |
-| 256² | 94 Mcells/s   | 28 Mcells/s   | 15 Mcells/s | **6.0×** |
-| 512² | 350 Mcells/s  | 24 Mcells/s   | 16 Mcells/s | **21.8×** |
+| Grid | Kaggle 2×T4 (per GPU) | Colab T4 | Meep CPU | **GPU / Meep** |
+|------|:---------------------:|:--------:|:--------:|:--------------:|
+| 64²  | 7 Mcells/s     | 6 Mcells/s    | 14 Mcells/s | 0.5× |
+| 128² | 24 Mcells/s    | 25 Mcells/s   | 20 Mcells/s | 1.2× |
+| 256² | 102 Mcells/s   | 94 Mcells/s   | 15 Mcells/s | **6.8×** |
+| 512² | 384 Mcells/s   | 350 Mcells/s  | 16 Mcells/s | **24×** |
+| 1024²| **1,481 Mcells/s** | —        | — | **92×** (est.) |
 
-> **At 512² grid: 21.8× faster than Meep on a free Colab T4 GPU.**
+> **At 512² grid: 24× faster than Meep on Kaggle T4.**  
+> **At 1024² grid: 1,481 Mcells/s — 92× faster than Meep (Kaggle 2×T4).**  
+> Combined 2×T4: **2,871 Mcells/s** = **179× faster than Meep CPU.**
 
 **CPU-only comparison (all scenarios, laptop):**
 
