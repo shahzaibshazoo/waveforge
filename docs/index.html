@@ -23,7 +23,7 @@
       <li><a href="#simulations">Simulations</a></li>
       <li><a href="#quickstart">Quickstart</a></li>
       <li><a href="#docs">Docs</a></li>
-      <li><a href="https://github.com/shahzaibshazoo/cuda-meep" class="nav-github" target="_blank">GitHub ↗</a></li>
+      <li><a href="https://github.com/shahzaibshazoo/waveforge" class="nav-github" target="_blank">GitHub ↗</a></li>
     </ul>
   </div>
 </nav>
@@ -45,7 +45,7 @@
     </p>
     <div class="hero-actions">
       <a href="#quickstart" class="btn-primary">Get Started</a>
-      <a href="https://github.com/shahzaibshazoo/cuda-meep" class="btn-secondary" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge" class="btn-secondary" target="_blank">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         View on GitHub
       </a>
@@ -303,7 +303,7 @@
         <div class="qs-num">1</div>
         <h3>Google Colab (fastest)</h3>
         <p>No setup. Free T4 GPU. Click and run.</p>
-        <a href="https://colab.research.google.com/github/shahzaibshazoo/cuda-meep/blob/main/notebooks/colab_benchmark.ipynb" class="btn-primary" target="_blank">
+        <a href="https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb" class="btn-primary" target="_blank">
           Open in Colab ↗
         </a>
       </div>
@@ -311,8 +311,8 @@
         <div class="qs-num">2</div>
         <h3>Local Install</h3>
         <div class="code-block">
-          <pre><code>git clone https://github.com/shahzaibshazoo/cuda-meep.git
-cd cuda-meep
+          <pre><code>git clone https://github.com/shahzaibshazoo/waveforge.git
+cd waveforge
 pip install torch numpy matplotlib pytest
 python examples/basic_2d_wave.py</code></pre>
         </div>
@@ -374,32 +374,32 @@ sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)</code></pre>
       <h2>Documentation</h2>
     </div>
     <div class="docs-grid">
-      <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/src/core" class="doc-card" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core" class="doc-card" target="_blank">
         <div class="doc-icon">📐</div>
         <h4>Core API</h4>
         <p>YeeGrid, FieldSet, FDTD2D, MurABC — the simulation engine</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/src/core/materials.py" class="doc-card" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core/materials.py" class="doc-card" target="_blank">
         <div class="doc-icon">🧬</div>
         <h4>Materials</h4>
         <p>Per-cell εᵣ, σ coefficients. Tissue library. Custom material maps.</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/src/core/sources.py" class="doc-card" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core/sources.py" class="doc-card" target="_blank">
         <div class="doc-icon">📻</div>
         <h4>Sources</h4>
         <p>GaussianPulse, RickerWavelet, SinusoidalSource, PointSource, LineSource</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/src/visualization" class="doc-card" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/visualization" class="doc-card" target="_blank">
         <div class="doc-icon">📊</div>
         <h4>Visualization</h4>
         <p>plot_field(), FieldAnimator — snapshots, animations, MP4 export</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/examples" class="doc-card" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/examples" class="doc-card" target="_blank">
         <div class="doc-icon">🎯</div>
         <h4>Examples</h4>
         <p>10 fully runnable scenarios from basic wave to breast tumor imaging</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/docs/architecture" class="doc-card" target="_blank">
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/docs/architecture" class="doc-card" target="_blank">
         <div class="doc-icon">🏗️</div>
         <h4>Architecture</h4>
         <p>System design, FDTD core, CUDA optimization, differentiable physics</p>
@@ -500,10 +500,10 @@ sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)</code></pre>
       </div>
       <div class="footer-links">
         <h5>Project</h5>
-        <a href="https://github.com/shahzaibshazoo/cuda-meep" target="_blank">GitHub</a>
-        <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/examples" target="_blank">Examples</a>
-        <a href="https://github.com/shahzaibshazoo/cuda-meep/tree/main/docs/architecture" target="_blank">Architecture</a>
-        <a href="https://colab.research.google.com/github/shahzaibshazoo/cuda-meep/blob/main/notebooks/colab_benchmark.ipynb" target="_blank">Colab Notebook</a>
+        <a href="https://github.com/shahzaibshazoo/waveforge" target="_blank">GitHub</a>
+        <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/examples" target="_blank">Examples</a>
+        <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/docs/architecture" target="_blank">Architecture</a>
+        <a href="https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb" target="_blank">Colab Notebook</a>
       </div>
       <div class="footer-links">
         <h5>Applications</h5>

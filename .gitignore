@@ -19,3 +19,4 @@ benchmarks/results.txt
 .env
 *.log
 .ipynb_checkpoints/
+api

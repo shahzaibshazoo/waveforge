@@ -9,7 +9,7 @@
     "n_steps": 200,
     "dx_mm": 1.0
   },
-  "cuda_meep_cpu": [
+  "waveforge_cpu": [
     {
       "N": 64,
       "mcells_s": 3.13,

@@ -130,7 +130,7 @@ Two coherent sources at 2.4 GHz creating standing wave pattern. Fringe spacing =
 
 ## Quickstart (Google Colab — GPU)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shahzaibshazoo/cuda-meep/blob/main/notebooks/colab_benchmark.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb)
 
 1. Click the badge → Runtime → **T4 GPU** → Run all cells
 
@@ -139,8 +139,8 @@ Two coherent sources at 2.4 GHz creating standing wave pattern. Fringe spacing =
 ## Installation
 
 ```bash
-git clone https://github.com/shahzaibshazoo/cuda-meep.git
-cd cuda-meep
+git clone https://github.com/shahzaibshazoo/waveforge.git
+cd waveforge
 pip install torch numpy matplotlib pytest
 ```
 
@@ -167,7 +167,7 @@ python examples/brain_mimo_imaging.py      # full brain MIMO
 ## Project Structure
 
 ```
-cuda-meep/
+waveforge/
 ├── src/core/
 │   ├── grid.py          # YeeGrid, CFL enforcement
 │   ├── fields.py        # SoA field tensor container (batch-ready)
