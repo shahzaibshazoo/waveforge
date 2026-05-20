@@ -1,0 +1,150 @@
+{
+  "meta": {
+    "date": "2026-05-20T13:50:47.805467",
+    "platform": "Kaggle",
+    "n_gpus": 2,
+    "gpu_name": "Tesla T4",
+    "torch": "2.10.0+cu128",
+    "measured": true
+  },
+  "gpu_scaling": {
+    "cuda:0": {
+      "name": "Tesla T4",
+      "rows": [
+        {
+          "N": 64,
+          "mcells_s": 6.9,
+          "ms_step": 0.596
+        },
+        {
+          "N": 128,
+          "mcells_s": 24.4,
+          "ms_step": 0.67
+        },
+        {
+          "N": 256,
+          "mcells_s": 101.6,
+          "ms_step": 0.645
+        },
+        {
+          "N": 512,
+          "mcells_s": 383.6,
+          "ms_step": 0.683
+        },
+        {
+          "N": 1024,
+          "mcells_s": 1389.8,
+          "ms_step": 0.754
+        }
+      ]
+    },
+    "cuda:1": {
+      "name": "Tesla T4",
+      "rows": [
+        {
+          "N": 64,
+          "mcells_s": 6.0,
+          "ms_step": 0.68
+        },
+        {
+          "N": 128,
+          "mcells_s": 23.3,
+          "ms_step": 0.702
+        },
+        {
+          "N": 256,
+          "mcells_s": 91.5,
+          "ms_step": 0.716
+        },
+        {
+          "N": 512,
+          "mcells_s": 360.0,
+          "ms_step": 0.728
+        },
+        {
+          "N": 1024,
+          "mcells_s": 1481.4,
+          "ms_step": 0.708
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "name": "01_basic_wave",
+      "desc": "128x128 free-space",
+      "status": "OK",
+      "time_s": 6.9,
+      "mcells_s": 19.2
+    },
+    {
+      "name": "02_dielectric_slab",
+      "desc": "200x64  slab R/T",
+      "status": "OK",
+      "time_s": 4.5,
+      "mcells_s": 14.5
+    },
+    {
+      "name": "03_waveguide",
+      "desc": "200x60  waveguide",
+      "status": "OK",
+      "time_s": 4.4,
+      "mcells_s": 15.2
+    },
+    {
+      "name": "04_scattering",
+      "desc": "150x150 cylinder",
+      "status": "OK",
+      "time_s": 4.7,
+      "mcells_s": 23.2
+    },
+    {
+      "name": "05_through_wall",
+      "desc": "200x100 through-wall",
+      "status": "OK",
+      "time_s": 4.7,
+      "mcells_s": 23.8
+    },
+    {
+      "name": "06_interference",
+      "desc": "128x128 WiFi 2.4GHz",
+      "status": "OK",
+      "time_s": 4.8,
+      "mcells_s": 18.6
+    },
+    {
+      "name": "07_tissue",
+      "desc": "250x80  tissue",
+      "status": "OK",
+      "time_s": 5.2,
+      "mcells_s": 21.7
+    },
+    {
+      "name": "08_ev_radar",
+      "desc": "200x200 EV radar",
+      "status": "OK",
+      "time_s": 5.0,
+      "mcells_s": 43.6
+    },
+    {
+      "name": "09_brain_clot",
+      "desc": "150x150 brain MIMO",
+      "status": "OK",
+      "time_s": 49.2,
+      "mcells_s": 25.0
+    },
+    {
+      "name": "10_breast_tumor",
+      "desc": "200x200 breast MIMO",
+      "status": "OK",
+      "time_s": 31.4,
+      "mcells_s": 45.2
+    }
+  ],
+  "summary": {
+    "examples_passed": 10,
+    "examples_total": 10,
+    "peak_mcells_s": 45.2,
+    "total_example_time_s": 120.8
+  }
+}
