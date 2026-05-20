@@ -382,3 +382,273 @@ class MurABC:
             f"n_boundary_cells={self.n_boundary_cells}"
             f")"
         )
+
+
+# ---------------------------------------------------------------------------
+# MurABC3D
+# ---------------------------------------------------------------------------
+
+class MurABC3D:
+    """First-order Mur absorbing boundary condition for 3D FDTD.
+
+    Applies the Mur ABC update to all six faces of the domain for all three
+    H-field components (Hx, Hy, Hz) after each FDTD field update.  On each
+    face only the two tangential H-components are absorbed; the normal
+    component does not require a boundary update under the first-order Mur
+    formulation.
+
+    The update formula for a field *f* on a face whose outward normal is
+    direction *n* is::
+
+        f[face] = f_prev[one_cell_in]
+                  + C_n * (f[one_cell_in] - f_prev[face])
+
+    where ``C_n = (c0*dt - dn) / (c0*dt + dn)`` and *dn* is the cell spacing
+    in the normal direction.
+
+    Faces and their tangential components:
+
+    - **x_min / x_max**: absorb Hy and Hz
+    - **y_min / y_max**: absorb Hx and Hz
+    - **z_min / z_max**: absorb Hx and Hy
+
+    Corner and edge cells are overwritten by multiple faces, which is
+    acceptable for a first-order Mur scheme.
+
+    Parameters
+    ----------
+    grid : YeeGrid
+        Yee-lattice geometry providing Nx, Ny, Nz, dx, dy, dz, dt, device,
+        and dtype.
+    Hx_field : torch.Tensor
+        Live Hx tensor owned by the FDTD solver.  This class holds a
+        reference; it does **not** take ownership.
+    Hy_field : torch.Tensor
+        Live Hy tensor owned by the FDTD solver.
+    Hz_field : torch.Tensor
+        Live Hz tensor owned by the FDTD solver.
+
+    Raises
+    ------
+    ValueError
+        If any Mur coefficient falls outside the open interval ``(-1, 0)``,
+        indicating a CFL violation.
+    """
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+
+    def __init__(
+        self,
+        grid: YeeGrid,
+        Hx_field: torch.Tensor,
+        Hy_field: torch.Tensor,
+        Hz_field: torch.Tensor,
+    ) -> None:
+        """Initialise Mur coefficients, snapshot buffers, and live references."""
+        dt: float = grid.dt
+
+        # Mur coefficients — Python floats, computed once per direction
+        self.C_mur_x: float = (C0 * dt - grid.dx) / (C0 * dt + grid.dx)
+        self.C_mur_y: float = (C0 * dt - grid.dy) / (C0 * dt + grid.dy)
+        self.C_mur_z: float = (C0 * dt - grid.dz) / (C0 * dt + grid.dz)
+
+        # Stability validation: CFL guarantees each C_mur in (-1, 0)
+        for name, coeff in [
+            ("C_mur_x", self.C_mur_x),
+            ("C_mur_y", self.C_mur_y),
+            ("C_mur_z", self.C_mur_z),
+        ]:
+            if not (-1.0 < coeff < 0.0):
+                raise ValueError(
+                    f"{name}={coeff!r} is not in the open interval (-1, 0). "
+                    "This indicates a CFL violation — reduce dt or increase the "
+                    "corresponding cell spacing."
+                )
+
+        # Snapshot buffers — same shape, dtype, and device as each live field
+        self.Hx_prev: torch.Tensor = torch.zeros_like(Hx_field)
+        self.Hy_prev: torch.Tensor = torch.zeros_like(Hy_field)
+        self.Hz_prev: torch.Tensor = torch.zeros_like(Hz_field)
+
+        # Live references; this class does NOT own the field tensors
+        self._Hx: torch.Tensor = Hx_field
+        self._Hy: torch.Tensor = Hy_field
+        self._Hz: torch.Tensor = Hz_field
+
+        self._Nx: int = grid.Nx
+        self._Ny: int = grid.Ny
+        self._Nz: int = grid.Nz
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
+
+    def snapshot(self) -> None:
+        """Capture the current H-field state before the FDTD field update.
+
+        Must be called **before** the FDTD curl-update each time step so that
+        :py:meth:`apply` can compare the post-update H fields against the
+        saved pre-update values.
+        """
+        self.Hx_prev.copy_(self._Hx)
+        self.Hy_prev.copy_(self._Hy)
+        self.Hz_prev.copy_(self._Hz)
+
+    def apply(self, Hx: torch.Tensor, Hy: torch.Tensor, Hz: torch.Tensor) -> None:
+        """Apply Mur ABC in-place to all three H-components on all six faces.
+
+        Overwrites the boundary-face slices of *Hx*, *Hy*, and *Hz* using the
+        saved snapshot.  Corner and edge cells are overwritten by multiple
+        faces; this is acceptable for first-order Mur.
+
+        Ellipsis (``...``) indexing absorbs any leading batch dimension
+        ``(B, Nx, Ny, Nz)`` as well as the unbatched case ``(Nx, Ny, Nz)``,
+        so both FieldSet modes work correctly.
+
+        Parameters
+        ----------
+        Hx : torch.Tensor
+            x-component of the magnetic field, shape ``(Nx, Ny, Nz)`` or
+            ``(B, Nx, Ny, Nz)``.  Modified in-place.
+        Hy : torch.Tensor
+            y-component of the magnetic field.  Modified in-place.
+        Hz : torch.Tensor
+            z-component of the magnetic field.  Modified in-place.
+        """
+        Nx, Ny, Nz = self._Nx, self._Ny, self._Nz
+        cx, cy, cz = self.C_mur_x, self.C_mur_y, self.C_mur_z
+
+        # x_min face (i = 0) — tangential components: Hy, Hz
+        Hy[..., 0, :, :] = (
+            self.Hy_prev[..., 1, :, :]
+            + cx * (Hy[..., 1, :, :] - self.Hy_prev[..., 0, :, :])
+        )
+        Hz[..., 0, :, :] = (
+            self.Hz_prev[..., 1, :, :]
+            + cx * (Hz[..., 1, :, :] - self.Hz_prev[..., 0, :, :])
+        )
+
+        # x_max face (i = Nx-1) — tangential components: Hy, Hz
+        Hy[..., Nx - 1, :, :] = (
+            self.Hy_prev[..., Nx - 2, :, :]
+            + cx * (Hy[..., Nx - 2, :, :] - self.Hy_prev[..., Nx - 1, :, :])
+        )
+        Hz[..., Nx - 1, :, :] = (
+            self.Hz_prev[..., Nx - 2, :, :]
+            + cx * (Hz[..., Nx - 2, :, :] - self.Hz_prev[..., Nx - 1, :, :])
+        )
+
+        # y_min face (j = 0) — tangential components: Hx, Hz
+        Hx[..., :, 0, :] = (
+            self.Hx_prev[..., :, 1, :]
+            + cy * (Hx[..., :, 1, :] - self.Hx_prev[..., :, 0, :])
+        )
+        Hz[..., :, 0, :] = (
+            self.Hz_prev[..., :, 1, :]
+            + cy * (Hz[..., :, 1, :] - self.Hz_prev[..., :, 0, :])
+        )
+
+        # y_max face (j = Ny-1) — tangential components: Hx, Hz
+        Hx[..., :, Ny - 1, :] = (
+            self.Hx_prev[..., :, Ny - 2, :]
+            + cy * (Hx[..., :, Ny - 2, :] - self.Hx_prev[..., :, Ny - 1, :])
+        )
+        Hz[..., :, Ny - 1, :] = (
+            self.Hz_prev[..., :, Ny - 2, :]
+            + cy * (Hz[..., :, Ny - 2, :] - self.Hz_prev[..., :, Ny - 1, :])
+        )
+
+        # z_min / z_max faces — only meaningful when Nz > 1
+        if Nz > 1:
+            # z_min face (k = 0) — tangential components: Hx, Hy
+            Hx[..., :, :, 0] = (
+                self.Hx_prev[..., :, :, 1]
+                + cz * (Hx[..., :, :, 1] - self.Hx_prev[..., :, :, 0])
+            )
+            Hy[..., :, :, 0] = (
+                self.Hy_prev[..., :, :, 1]
+                + cz * (Hy[..., :, :, 1] - self.Hy_prev[..., :, :, 0])
+            )
+
+            # z_max face (k = Nz-1) — tangential components: Hx, Hy
+            Hx[..., :, :, Nz - 1] = (
+                self.Hx_prev[..., :, :, Nz - 2]
+                + cz * (Hx[..., :, :, Nz - 2] - self.Hx_prev[..., :, :, Nz - 1])
+            )
+            Hy[..., :, :, Nz - 1] = (
+                self.Hy_prev[..., :, :, Nz - 2]
+                + cz * (Hy[..., :, :, Nz - 2] - self.Hy_prev[..., :, :, Nz - 1])
+            )
+
+    # ------------------------------------------------------------------
+    # Properties (read-only)
+    # ------------------------------------------------------------------
+
+    @property
+    def n_boundary_cells(self) -> int:
+        """Total number of boundary face cells across all six faces.
+
+        Each axis contributes two faces; per face the cell count is the
+        product of the two transverse grid dimensions.
+
+        Returns
+        -------
+        int
+            ``2 * (Nx*Ny + Ny*Nz + Nx*Nz)``.
+        """
+        return 2 * (
+            self._Nx * self._Ny
+            + self._Ny * self._Nz
+            + self._Nx * self._Nz
+        )
+
+    @property
+    def mur_coefficient_x(self) -> float:
+        """Mur ABC coefficient for x-directed boundaries.
+
+        Returns
+        -------
+        float
+            ``C_mur_x = (c0*dt - dx) / (c0*dt + dx)``.
+        """
+        return self.C_mur_x
+
+    @property
+    def mur_coefficient_y(self) -> float:
+        """Mur ABC coefficient for y-directed boundaries.
+
+        Returns
+        -------
+        float
+            ``C_mur_y = (c0*dt - dy) / (c0*dt + dy)``.
+        """
+        return self.C_mur_y
+
+    @property
+    def mur_coefficient_z(self) -> float:
+        """Mur ABC coefficient for z-directed boundaries.
+
+        Returns
+        -------
+        float
+            ``C_mur_z = (c0*dt - dz) / (c0*dt + dz)``.
+        """
+        return self.C_mur_z
+
+    # ------------------------------------------------------------------
+    # Dunder methods
+    # ------------------------------------------------------------------
+
+    def __repr__(self) -> str:
+        """Return a human-readable summary of the MurABC3D configuration."""
+        return (
+            f"MurABC3D("
+            f"shape=({self._Nx}, {self._Ny}, {self._Nz}), "
+            f"C_mur_x={self.C_mur_x:.6f}, "
+            f"C_mur_y={self.C_mur_y:.6f}, "
+            f"C_mur_z={self.C_mur_z:.6f}, "
+            f"n_boundary_cells={self.n_boundary_cells}"
+            f")"
+        )
