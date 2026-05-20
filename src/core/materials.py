@@ -272,3 +272,213 @@ class MaterialMap:
     def __repr__(self) -> str:
         return (f"MaterialMap(grid=({self._grid.Nx},{self._grid.Ny}), "
                 f"n_regions={len(self._regions)}, default={self._default.name})")
+
+
+# ---------------------------------------------------------------------------
+# 3D geometry adders (extend MaterialMap via a subclass to avoid breaking 2D API)
+# ---------------------------------------------------------------------------
+
+class MaterialMap3D(MaterialMap):
+    """MaterialMap extended with 3D geometry primitives.
+
+    All ``add_*`` methods accept 3D coordinates (i, j, k) and build coefficient
+    tensors of shape ``(Nx, Ny, Nz)`` via :meth:`build3d`.
+
+    The 2D inherited methods (``add_circle``, ``add_rectangle``) and ``build()``
+    are intentionally **not** overridden — they remain valid for 2D regions
+    applied uniformly along z if needed.  Use ``build3d()`` for full 3D output.
+
+    Usage
+    -----
+    .. code-block:: python
+
+        mm = MaterialMap3D(grid)
+        mm.add_sphere(center=(32, 32, 32), radius=10, material=MAT_TUMOR)
+        Ca, Cb = mm.build3d()
+    """
+
+    def __init__(self, grid: YeeGrid, default: Material | None = None) -> None:
+        super().__init__(grid, default)
+        # 3D regions: each is (mask_fn_3d, material)
+        # mask_fn_3d: (I3, J3, K3) -> bool tensor (Nx, Ny, Nz)
+        self._regions3d: list = []
+        self._materials3d: list[Material] = []
+
+    # ------------------------------------------------------------------
+    # 3D region adders
+    # ------------------------------------------------------------------
+
+    def add_sphere(self, center: tuple, radius: float,
+                   material: Material) -> 'MaterialMap3D':
+        """Fill a spherical region.
+
+        Parameters
+        ----------
+        center : (ci, cj, ck) in cell indices.
+        radius : float, in cell units.
+        material : Material to assign.
+        """
+        ci, cj, ck = float(center[0]), float(center[1]), float(center[2])
+        r2 = radius * radius
+
+        def mask(I: torch.Tensor, J: torch.Tensor, K: torch.Tensor) -> torch.Tensor:
+            return (I - ci) ** 2 + (J - cj) ** 2 + (K - ck) ** 2 <= r2
+
+        self._regions3d.append(mask)
+        self._materials3d.append(material)
+        return self
+
+    def add_cylinder(self, center: tuple, axis: str, radius: float,
+                     height: float, material: Material) -> 'MaterialMap3D':
+        """Fill a cylindrical region.
+
+        Parameters
+        ----------
+        center : (ci, cj, ck) — centre of the cylinder in cell indices.
+        axis : 'x', 'y', or 'z' — cylinder axis direction.
+        radius : float, in cell units (cross-sectional radius).
+        height : float, in cell units (full length along axis).
+        material : Material to assign.
+        """
+        ci, cj, ck = float(center[0]), float(center[1]), float(center[2])
+        r2 = radius * radius
+        h2 = height / 2.0
+
+        if axis == 'x':
+            def mask(I, J, K):
+                in_cross = (J - cj) ** 2 + (K - ck) ** 2 <= r2
+                in_length = (I - ci).abs() <= h2
+                return in_cross & in_length
+        elif axis == 'y':
+            def mask(I, J, K):
+                in_cross = (I - ci) ** 2 + (K - ck) ** 2 <= r2
+                in_length = (J - cj).abs() <= h2
+                return in_cross & in_length
+        else:  # 'z'
+            def mask(I, J, K):
+                in_cross = (I - ci) ** 2 + (J - cj) ** 2 <= r2
+                in_length = (K - ck).abs() <= h2
+                return in_cross & in_length
+
+        self._regions3d.append(mask)
+        self._materials3d.append(material)
+        return self
+
+    def add_box(self, corner_min: tuple, corner_max: tuple,
+                material: Material) -> 'MaterialMap3D':
+        """Fill a rectangular box region.
+
+        Parameters
+        ----------
+        corner_min : (i0, j0, k0) — minimum corner in cell indices.
+        corner_max : (i1, j1, k1) — maximum corner in cell indices.
+        material : Material to assign.
+        """
+        i0, j0, k0 = float(corner_min[0]), float(corner_min[1]), float(corner_min[2])
+        i1, j1, k1 = float(corner_max[0]), float(corner_max[1]), float(corner_max[2])
+
+        def mask(I: torch.Tensor, J: torch.Tensor, K: torch.Tensor) -> torch.Tensor:
+            return (I >= i0) & (I <= i1) & (J >= j0) & (J <= j1) & (K >= k0) & (K <= k1)
+
+        self._regions3d.append(mask)
+        self._materials3d.append(material)
+        return self
+
+    def add_ellipsoid(self, center: tuple, semi_axes: tuple,
+                      material: Material) -> 'MaterialMap3D':
+        """Fill an ellipsoidal region.
+
+        Parameters
+        ----------
+        center : (ci, cj, ck) — centre in cell indices.
+        semi_axes : (a, b, c) — semi-axis lengths in cell units along x, y, z.
+        material : Material to assign.
+        """
+        ci, cj, ck = float(center[0]), float(center[1]), float(center[2])
+        a2 = float(semi_axes[0]) ** 2
+        b2 = float(semi_axes[1]) ** 2
+        c2 = float(semi_axes[2]) ** 2
+
+        def mask(I: torch.Tensor, J: torch.Tensor, K: torch.Tensor) -> torch.Tensor:
+            return (I - ci) ** 2 / a2 + (J - cj) ** 2 / b2 + (K - ck) ** 2 / c2 <= 1.0
+
+        self._regions3d.append(mask)
+        self._materials3d.append(material)
+        return self
+
+    def add_custom3d(self, mask_fn, material: Material) -> 'MaterialMap3D':
+        """Add a region defined by an arbitrary 3D mask function.
+
+        Parameters
+        ----------
+        mask_fn : callable (I, J, K) -> bool tensor, shapes (Nx, Ny, Nz).
+        material : Material to assign where mask is True.
+        """
+        self._regions3d.append(mask_fn)
+        self._materials3d.append(material)
+        return self
+
+    # ------------------------------------------------------------------
+    # 3D build
+    # ------------------------------------------------------------------
+
+    def build3d(self) -> tuple[torch.Tensor, torch.Tensor]:
+        """Compute Ca and Cb coefficient tensors for 3D simulation.
+
+        Applies all 3D regions (added via ``add_sphere``, ``add_box``, etc.) on
+        top of the default material. Painter's algorithm: later regions overwrite
+        earlier ones.
+
+        Returns
+        -------
+        (Ca, Cb) : tuple of Tensors, each shape ``(Nx, Ny, Nz)``, float32, on
+            ``grid.device``.
+
+        Raises
+        ------
+        ValueError
+            If Ca <= 0 anywhere (unphysical conductivity).
+        """
+        Nx, Ny, Nz = self._grid.Nx, self._grid.Ny, self._grid.Nz
+        dt = self._grid.dt
+        device = self._grid.device
+        dtype = self._grid.dtype
+
+        # Start from default material
+        ca_arr = torch.full((Nx, Ny, Nz), self._default.ca(dt), dtype=torch.float32)
+        cb_arr = torch.full((Nx, Ny, Nz), self._default.cb(dt), dtype=torch.float32)
+
+        # Build 3D index grids on CPU
+        I = torch.arange(Nx, dtype=torch.float32).view(-1, 1, 1).expand(Nx, Ny, Nz)
+        J = torch.arange(Ny, dtype=torch.float32).view(1, -1, 1).expand(Nx, Ny, Nz)
+        K = torch.arange(Nz, dtype=torch.float32).view(1, 1, -1).expand(Nx, Ny, Nz)
+
+        # Apply 3D regions in order
+        for mask_fn, mat in zip(self._regions3d, self._materials3d):
+            mask = mask_fn(I, J, K)   # bool tensor (Nx, Ny, Nz)
+            ca_arr[mask] = mat.ca(dt)
+            cb_arr[mask] = mat.cb(dt)
+
+        # Validate
+        ca_min = float(ca_arr.min().item())
+        if ca_min <= 0.0:
+            raise ValueError(
+                f"Ca <= 0 detected (min={ca_min:.6f}). "
+                "Check material conductivities or reduce dt."
+            )
+        if ca_min < 0.5:
+            warnings.warn(
+                f"Some Ca values below 0.5 (min={ca_min:.4f}). "
+                "Very high conductivity — verify material parameters.",
+                UserWarning, stacklevel=2
+            )
+
+        Ca = ca_arr.to(device=device, dtype=dtype)
+        Cb = cb_arr.to(device=device, dtype=dtype)
+        return Ca, Cb
+
+    def __repr__(self) -> str:
+        return (f"MaterialMap3D(grid=({self._grid.Nx},{self._grid.Ny},{self._grid.Nz}), "
+                f"n_regions2d={len(self._regions)}, "
+                f"n_regions3d={len(self._regions3d)}, "
+                f"default={self._default.name})")
