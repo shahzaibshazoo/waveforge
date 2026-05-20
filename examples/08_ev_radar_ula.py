@@ -21,6 +21,7 @@ Run: python examples/08_ev_radar_ula.py
 import sys, math
 from pathlib import Path
 import numpy as np
+import time
 import torch
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
@@ -108,11 +109,14 @@ def main():
     print(f"ULA: {N_ELEM} elements, spacing={ULA_SPACING_CELLS}mm, f={FREQ/1e9:.0f}GHz")
     print(f"Target: cylinder r={TARGET_RAD}mm at ({TX_CX},{TX_CY}) → {ANGLE_DEG}° from broadside")
 
+    _t0_bench = time.perf_counter()
     for n in range(N_STEPS):
         sim.step()
         all_signals[:, n] = fields.Hz[rx_i, rx_j, 0].cpu().numpy()
         if n == 300: snap = fields.Hz[:,:,0].detach().cpu().numpy().T.copy()
 
+    _bench_mc = N_STEPS * NX * NY / max(time.perf_counter() - _t0_bench, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
     if snap is None: snap = fields.Hz[:,:,0].detach().cpu().numpy().T.copy()
 
     # Beamforming

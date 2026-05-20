@@ -9,6 +9,7 @@ Run: python examples/04_scattering_cylinder.py
 import sys, math
 from pathlib import Path
 import numpy as np
+import time
 import torch
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
@@ -54,11 +55,14 @@ def main():
     snap   = None
 
     print(f"Running {N_STEPS} steps on {DEVICE}...")
+    _t0_bench = time.perf_counter()
     for n in range(N_STEPS):
         sim.step()
         if n == 299: snap = fields.Hz[:,:,0].detach().cpu().numpy().T.copy()
         for d,(di,dj) in enumerate(dets):
             sigs[d,n] = fields.Hz[di,dj,0].item()
+    _bench_mc = N_STEPS * NX * NY / max(time.perf_counter() - _t0_bench, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
     if snap is None: snap = fields.Hz[:,:,0].detach().cpu().numpy().T.copy()
 
     # eps_r map

@@ -9,6 +9,7 @@ Run: python examples/03_waveguide.py
 import sys, math
 from pathlib import Path
 import numpy as np
+import time
 import torch
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
@@ -38,12 +39,15 @@ def main():
 
     det_hz = np.zeros(N_STEPS, dtype=np.float32)
     print(f"Running {N_STEPS} steps on {DEVICE}...")
+    _t0_bench = time.perf_counter()
     for n in range(N_STEPS):
         sim.step()
         fields.Hz[:, 0, :]    = 0.0   # PEC wall bottom
         fields.Hz[:, NY-1, :] = 0.0   # PEC wall top
         det_hz[n] = fields.Hz[100, 30, 0].item()
 
+    _bench_mc = N_STEPS * NX * NY / max(time.perf_counter() - _t0_bench, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
     OUTPUT_DIR.mkdir(exist_ok=True)
     fig, axes = plt.subplots(1, 2, figsize=(13, 4))
     hz  = fields.Hz[:,:,0].detach().cpu().numpy().T

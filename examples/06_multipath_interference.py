@@ -9,6 +9,7 @@ Run: python examples/06_multipath_interference.py
 import sys, math
 from pathlib import Path
 import numpy as np
+import time
 import torch
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
@@ -40,6 +41,7 @@ def main():
     hz_sq_sum = np.zeros((NY, NX), dtype=np.float64)
     snap = None
     print(f"Running {N_STEPS} steps on {DEVICE}...")
+    _t0_bench = time.perf_counter()
     for n in range(N_STEPS):
         sim.step()
         if n >= N_STEPS - AVG_WIN:
@@ -47,6 +49,8 @@ def main():
         if n+1 == N_STEPS:
             snap = fields.Hz[:,:,0].detach().cpu().numpy().T.copy()
 
+    _bench_mc = N_STEPS * NX * NY / max(time.perf_counter() - _t0_bench, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
     hz_sq_avg = (hz_sq_sum / AVG_WIN).astype(np.float32)
 
     OUTPUT_DIR.mkdir(exist_ok=True)

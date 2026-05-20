@@ -9,6 +9,7 @@ Run: python examples/07_tissue_penetration.py
 import sys, math
 from pathlib import Path
 import numpy as np
+import time
 import torch
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
@@ -45,12 +46,15 @@ def main():
     det_xs  = [10, 20, 40, 60, 80]
     peaks   = {x: 0.0 for x in det_xs}
     print(f"Running {N_STEPS} steps on {DEVICE}...")
+    _t0_bench = time.perf_counter()
     for n in range(N_STEPS):
         sim.step()
         for xi in det_xs:
             v = abs(float(fields.Hz[xi, NY//2, 0].item()))
             if v > peaks[xi]: peaks[xi] = v
 
+    _bench_mc = N_STEPS * NX * NY / max(time.perf_counter() - _t0_bench, 1e-9) / 1e6
+    print(f"WAVEFORGE_BENCH: {_bench_mc:.1f} Mcells/s")
     hz = fields.Hz[:,:,0].detach().cpu().numpy().T
     eps_map = np.ones((NY,NX),dtype=np.float32)
     eps_map[:,5:15]=40; eps_map[:,15:30]=5; eps_map[:,30:80]=50
