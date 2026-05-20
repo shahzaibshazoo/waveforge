@@ -25,12 +25,20 @@
   window.addEventListener('resize', resize);
 
   // Colour from amplitude in [-1, 1] → cyan / violet / green gradient
-  function ampColor(amp, alpha) {
-    // amp in [0, 1]
-    const r = Math.round(80  + amp * 100);
-    const g = Math.round(200 - amp * 80);
-    const b = Math.round(220 - amp * 30);
-    return `rgba(${r},${g},${b},${alpha})`;
+  // Mouse tracking for cursor-reactive particles
+  let mouse = { x: 0.5, y: 0.5 };
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - rect.left) / rect.width;
+    mouse.y = (e.clientY - rect.top)  / rect.height;
+  });
+
+  function ampColor(amp, alpha, hueShift) {
+    // Full spectrum: cyan → violet → green based on amp + hue shift
+    const h = (200 + amp * 160 + (hueShift || 0)) % 360;
+    const s = 80 + amp * 20;
+    const l = 50 + amp * 20;
+    return `hsla(${h},${s}%,${l}%,${alpha})`;
   }
 
   // Initialise particles spread across canvas with random phase offsets
@@ -102,28 +110,38 @@
     const H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // Compute screen coords + amplitude
+    // Compute screen coords + amplitude (cursor-reactive)
     const pts = new Array(PARTICLE_COUNT);
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const p  = particles[i];
+      // Wave from canvas center
       const dx = p.x - 0.5;
       const dy = p.y - 0.5;
       const d  = Math.sqrt(dx * dx + dy * dy);
-      const w  = 0.6 * Math.sin(d * 18 - t * 1.4 + p.phase)
-               + 0.4 * Math.sin(d * 32 - t * 2.1 + p.phase * 0.7);
-      pts[i] = { sx: p.x * W, sy: p.y * H, amp: (w + 1) * 0.5, r: p.radius };
+      // Wave from cursor position (interactive ripple)
+      const cx = p.x - mouse.x;
+      const cy = p.y - mouse.y;
+      const cd = Math.sqrt(cx * cx + cy * cy);
+      const cursorWave = 0.3 * Math.sin(cd * 25 - t * 3.0) * Math.exp(-cd * 4);
+      const w  = 0.5 * Math.sin(d * 18 - t * 1.4 + p.phase)
+               + 0.3 * Math.sin(d * 32 - t * 2.1 + p.phase * 0.7)
+               + cursorWave;
+      // Hue shift based on angle from cursor
+      const hueShift = Math.atan2(cy, cx) * 40;
+      pts[i] = { sx: p.x * W, sy: p.y * H, amp: (w + 1) * 0.5, r: p.radius, hue: hueShift };
     }
 
     // Lines
-    ctx.lineWidth = 0.7;
+    ctx.lineWidth = 0.8;
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       for (let j = i + 1; j < PARTICLE_COUNT; j++) {
         const ex = pts[i].sx - pts[j].sx;
         const ey = pts[i].sy - pts[j].sy;
         const ed = ex * ex + ey * ey;
         if (ed < CONNECT_DIST * CONNECT_DIST) {
-          const alpha = (1 - Math.sqrt(ed) / CONNECT_DIST) * 0.2;
-          ctx.strokeStyle = ampColor((pts[i].amp + pts[j].amp) * 0.5, alpha);
+          const alpha = (1 - Math.sqrt(ed) / CONNECT_DIST) * 0.28;
+          ctx.strokeStyle = ampColor((pts[i].amp + pts[j].amp) * 0.5, alpha,
+                                     (pts[i].hue + pts[j].hue) * 0.5);
           ctx.beginPath();
           ctx.moveTo(pts[i].sx, pts[i].sy);
           ctx.lineTo(pts[j].sx, pts[j].sy);
@@ -137,7 +155,7 @@
       const p = pts[i];
       ctx.beginPath();
       ctx.arc(p.sx, p.sy, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = ampColor(p.amp, 0.5 + p.amp * 0.4);
+      ctx.fillStyle = ampColor(p.amp, 0.65 + p.amp * 0.35, p.hue);
       ctx.fill();
     }
 
