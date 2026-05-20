@@ -1,5 +1,5 @@
 """
-benchmark_gpu_vs_cpu.py — FDTD2D throughput benchmark for GPU-MEEP.
+benchmark_gpu_vs_cpu.py — FDTD2D throughput benchmark for WaveForge.
 
 Measures Mcells/s across grid sizes on CPU and GPU (when available).
 Produces an aligned results table and saves it to benchmarks/results.txt.
@@ -229,7 +229,7 @@ def print_results_table(results: list) -> str:
 
 def main() -> None:
     """Run the full benchmark suite and print/save results."""
-    print("GPU-MEEP Benchmark -- FDTD2D Throughput")
+    print("WaveForge Benchmark -- FDTD2D Throughput")
     print(f"PyTorch version : {torch.__version__}")
     print(f"CUDA available  : {torch.cuda.is_available()}")
     if torch.cuda.is_available():
@@ -266,7 +266,7 @@ def main() -> None:
     # Save results to benchmarks/results.txt
     results_path = Path(__file__).parent / "results.txt"
     with open(results_path, "w", encoding="utf-8") as fh:
-        fh.write("GPU-MEEP Benchmark -- FDTD2D Throughput\n\n")
+        fh.write("WaveForge Benchmark -- FDTD2D Throughput\n\n")
         fh.write(table_str + "\n")
     print(f"\nResults saved to: {results_path}")
 

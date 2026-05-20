@@ -1,5 +1,5 @@
 """
-materials.py — Per-cell material coefficient tensors for GPU-MEEP.
+materials.py — Per-cell material coefficient tensors for WaveForge.
 
 Provides:
   - Material: dataclass holding eps_r, sigma for a single medium

@@ -1,5 +1,5 @@
 """
-test_fdtd2d.py — Comprehensive pytest suite for GPU-MEEP FDTD2D solver.
+test_fdtd2d.py — Comprehensive pytest suite for WaveForge FDTD2D solver.
 
 Covers: grid stability, field initialisation, physics correctness (Faraday /
 Ampere sign checks), pulse propagation, Mur ABC absorption, telemetry, and

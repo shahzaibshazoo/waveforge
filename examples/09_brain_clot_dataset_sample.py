@@ -195,7 +195,7 @@ def main() -> None:
     t_total_start = time.perf_counter()
 
     print("=" * 65)
-    print("GPU-MEEP: Brain Clot Dataset Generation (4 samples)")
+    print("WaveForge: Brain Clot Dataset Generation (4 samples)")
     print(f"Grid: {NX}x{NY}, dx={DX*1e3:.1f} mm, N_steps={N_STEPS}, "
           f"N_TX={N_TX}, device={DEVICE}")
     print("=" * 65)
@@ -271,7 +271,7 @@ def main() -> None:
     # Plot: 4 rows x 3 columns
     # ----------------------------------------------------------------
     fig, axes = plt.subplots(4, 3, figsize=(15, 20))
-    fig.suptitle('GPU-MEEP: Brain Clot Dataset (4 Samples x 8-TX MIMO)', fontsize=13)
+    fig.suptitle('WaveForge: Brain Clot Dataset (4 Samples x 8-TX MIMO)', fontsize=13)
 
     row_titles = [
         "Sample 0: Healthy",

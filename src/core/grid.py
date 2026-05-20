@@ -1,5 +1,5 @@
 """
-grid.py — Yee grid geometry and metadata for GPU-MEEP.
+grid.py — Yee grid geometry and metadata for WaveForge.
 
 Provides:
   - C0: speed of light constant

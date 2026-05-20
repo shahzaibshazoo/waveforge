@@ -1,5 +1,5 @@
 """
-fdtd2d.py — 2D TM-mode FDTD time-stepper for GPU-MEEP.
+fdtd2d.py — 2D TM-mode FDTD time-stepper for WaveForge.
 
 Implements the Yee leapfrog update for the TM-polarised Maxwell equations::
 

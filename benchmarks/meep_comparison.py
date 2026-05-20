@@ -1,5 +1,5 @@
 """
-meep_comparison.py — CUDA-MEEP vs Meep: per-scenario throughput comparison.
+meep_comparison.py — WaveForge vs Meep: per-scenario throughput comparison.
 
 Run with:
     /home/zuu/miniconda3/bin/conda run -n pymeep python benchmarks/meep_comparison.py
@@ -66,7 +66,7 @@ class BenchResult:
 
 
 # ---------------------------------------------------------------------------
-# CUDA-MEEP benchmark driver
+# WaveForge benchmark driver
 # ---------------------------------------------------------------------------
 
 def bench_cuda_meep(
@@ -77,7 +77,7 @@ def bench_cuda_meep(
     n_warmup: int = N_WARMUP,
     n_steps: int = N_STEPS,
 ) -> BenchResult:
-    """Run a CUDA-MEEP (CPU) scenario and return throughput.
+    """Run a WaveForge (CPU) scenario and return throughput.
 
     Parameters
     ----------
@@ -569,8 +569,8 @@ def run_all_scenarios() -> dict:
         Nx, Ny, dx = sc["Nx"], sc["Ny"], sc["dx"]
         print(f"\n[{name}]  {Nx}x{Ny}  dx={dx:.1e} m")
 
-        # --- CUDA-MEEP (CPU) ---
-        print(f"  CUDA-MEEP (CPU) ... ", end="", flush=True)
+        # --- WaveForge (CPU) ---
+        print(f"  WaveForge (CPU) ... ", end="", flush=True)
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -596,7 +596,7 @@ def run_all_scenarios() -> dict:
             res_mp = None
 
         results[name] = {
-            "cuda_meep": res_cm.to_dict() if res_cm is not None else None,
+            "waveforge": res_cm.to_dict() if res_cm is not None else None,
             "meep": res_mp.to_dict() if res_mp is not None else None,
             "grid": f"{Nx}x{Ny}",
             "notes": sc["notes"],
@@ -626,7 +626,7 @@ def make_figure(results: dict) -> None:
 
     for name in scenario_names:
         r = results.get(name, {})
-        cm = r.get("cuda_meep") or {}
+        cm = r.get("waveforge") or {}
         mp_r = r.get("meep") or {}
         cv = cm.get("mcells_s", 0.0) or 0.0
         mv = mp_r.get("mcells_s", 0.0) or 0.0
@@ -653,14 +653,14 @@ def make_figure(results: dict) -> None:
     bar_h = 0.35
 
     bars_cm = ax1.barh(y + bar_h / 2, cuda_arr, height=bar_h,
-                       color="#2ecc71", label="CUDA-MEEP (CPU)")
+                       color="#2ecc71", label="WaveForge (CPU)")
     bars_mp = ax1.barh(y - bar_h / 2, meep_arr, height=bar_h,
                        color="#e74c3c", label="Meep (pymeep)")
 
     ax1.set_yticks(y)
     ax1.set_yticklabels(labels, fontsize=9)
     ax1.set_xlabel("Throughput (Mcells/s)", fontsize=10)
-    ax1.set_title("Throughput Comparison: CUDA-MEEP vs Meep", fontsize=12, fontweight="bold")
+    ax1.set_title("Throughput Comparison: WaveForge vs Meep", fontsize=12, fontweight="bold")
     ax1.legend(loc="lower right", fontsize=9)
     ax1.grid(axis="x", alpha=0.3)
 
@@ -686,7 +686,7 @@ def make_figure(results: dict) -> None:
 
     ax2.set_xticks(x)
     ax2.set_xticklabels(labels, fontsize=9)
-    ax2.set_ylabel("Speedup (CUDA-MEEP / Meep)", fontsize=10)
+    ax2.set_ylabel("Speedup (WaveForge / Meep)", fontsize=10)
     ax2.set_title("Speedup Ratio per Scenario", fontsize=12, fontweight="bold")
     ax2.legend(fontsize=9)
     ax2.grid(axis="y", alpha=0.3)
@@ -700,7 +700,7 @@ def make_figure(results: dict) -> None:
                 ha="center", va="bottom", fontsize=8, fontweight="bold",
             )
 
-    green_patch = mpatches.Patch(color="#2ecc71", label="CUDA-MEEP wins")
+    green_patch = mpatches.Patch(color="#2ecc71", label="WaveForge wins")
     red_patch = mpatches.Patch(color="#e74c3c", label="Meep wins")
     ax2.legend(handles=[green_patch, red_patch], fontsize=9, loc="upper right")
 
@@ -710,13 +710,13 @@ def make_figure(results: dict) -> None:
     ax3 = fig.add_subplot(gs[2])
     ax3.axis("off")
 
-    col_labels = ["Scenario", "Grid", "CUDA-MEEP\n(Mcells/s)", "Meep\n(Mcells/s)",
+    col_labels = ["Scenario", "Grid", "WaveForge\n(Mcells/s)", "Meep\n(Mcells/s)",
                   "Speedup", "Notes"]
     table_data = []
     for sc in SCENARIOS:
         name = sc["name"]
         r = results.get(name, {})
-        cm = r.get("cuda_meep") or {}
+        cm = r.get("waveforge") or {}
         mp_r = r.get("meep") or {}
         cv = cm.get("mcells_s", 0.0) or 0.0
         mv = mp_r.get("mcells_s", 0.0) or 0.0
@@ -770,7 +770,7 @@ def make_figure(results: dict) -> None:
 def print_summary(results: dict) -> None:
     """Print a formatted summary table to stdout."""
     hdr = (
-        f"{'Scenario':<20} {'Grid':<10} {'CUDA-MEEP':>12} {'Meep':>12} "
+        f"{'Scenario':<20} {'Grid':<10} {'WaveForge':>12} {'Meep':>12} "
         f"{'Speedup':>10}  Notes"
     )
     sep = "-" * len(hdr)
@@ -781,7 +781,7 @@ def print_summary(results: dict) -> None:
     for sc in SCENARIOS:
         name = sc["name"]
         r = results.get(name, {})
-        cm = r.get("cuda_meep") or {}
+        cm = r.get("waveforge") or {}
         mp_r = r.get("meep") or {}
         cv = cm.get("mcells_s", 0.0) or 0.0
         mv = mp_r.get("mcells_s", 0.0) or 0.0
@@ -805,7 +805,7 @@ def main() -> None:
     matplotlib.use("Agg")
 
     print("=" * 60)
-    print("  CUDA-MEEP vs Meep — Throughput Benchmark")
+    print("  WaveForge vs Meep — Throughput Benchmark")
     print(f"  N_WARMUP={N_WARMUP}  N_STEPS={N_STEPS}")
     print("=" * 60)
 

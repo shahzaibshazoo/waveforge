@@ -279,7 +279,7 @@ def main() -> None:
     t_total_start = time.perf_counter()
 
     print("=" * 60)
-    print("GPU-MEEP: MIMO Brain Tumor Detection Simulation")
+    print("WaveForge: MIMO Brain Tumor Detection Simulation")
     print(f"Grid: {NX}x{NY}, dx={DX*1e3:.1f} mm, N_steps={N_STEPS}")
     print(f"Antennas: {N_ANTENNAS}, freq={FREQ/1e9:.1f} GHz, device={DEVICE}")
     print("=" * 60)
@@ -328,7 +328,7 @@ def main() -> None:
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 12))
-    fig.suptitle('GPU-MEEP: MIMO Brain Tumor Detection (1 GHz)', fontsize=14)
+    fig.suptitle('WaveForge: MIMO Brain Tumor Detection (1 GHz)', fontsize=14)
 
     # Panel 1: eps_r material map — clear contrast between all 4 regions
     # (Ca map has only 0.003 range between brain/tumor — invisible)

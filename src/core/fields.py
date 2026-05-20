@@ -1,5 +1,5 @@
 """
-fields.py — Yee-staggered field storage for GPU-MEEP.
+fields.py — Yee-staggered field storage for WaveForge.
 
 Provides:
   - FIELD_COMPONENTS: ordered tuple of the six standard field component names
@@ -86,7 +86,7 @@ class FieldSet:
     """Six-component Yee field storage backed by PyTorch tensors.
 
     Allocates one zero tensor per field component on the device and with the
-    dtype reported by the supplied :class:`~gpu_meep.core.grid.YeeGrid`.
+    dtype reported by the supplied :class:`~waveforge.core.grid.YeeGrid`.
     Provides named properties, in-place zeroing, cloning, device migration,
     energy diagnostics, and serialisation helpers.
 
@@ -327,7 +327,7 @@ class FieldSet:
         """Return a new :class:`FieldSet` with all tensors moved to *device*.
 
         The original :class:`FieldSet` is not modified.  The grid is also
-        migrated via its own :py:meth:`~gpu_meep.core.grid.YeeGrid.to` method.
+        migrated via its own :py:meth:`~waveforge.core.grid.YeeGrid.to` method.
 
         Parameters
         ----------

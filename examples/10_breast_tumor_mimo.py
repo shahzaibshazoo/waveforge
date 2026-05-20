@@ -177,7 +177,7 @@ def main():
     ant_pos = get_antenna_positions(N_TX, ARRAY_R, CENTER)
 
     print("="*60)
-    print("GPU-MEEP: Breast Tumor MIMO Imaging (1 GHz)")
+    print("WaveForge: Breast Tumor MIMO Imaging (1 GHz)")
     print(f"Grid: {NX}x{NY}, dx={DX*1e3:.1f}mm, N_TX={N_TX}, device={DEVICE}")
     print(f"Breast: {BREAST_A*2*DX*1e3:.0f}x{BREAST_B*2*DX*1e3:.0f}mm ellipse")
     print(f"Tumor:  r={TUMOR_R*DX*1e3:.0f}mm at ({TUMOR_CENTER[0]*DX*1e3:.0f},{TUMOR_CENTER[1]*DX*1e3:.0f})mm")
@@ -209,7 +209,7 @@ def main():
     # ── Plot ──────────────────────────────────────────────────────────────────
     OUTPUT_DIR.mkdir(exist_ok=True)
     fig, axes = plt.subplots(2, 3, figsize=(17, 11))
-    fig.suptitle('GPU-MEEP: Microwave Breast Tumor Detection (1 GHz MIMO)',
+    fig.suptitle('WaveForge: Microwave Breast Tumor Detection (1 GHz MIMO)',
                  fontsize=14, fontweight='bold')
 
     ext = [0, NX*DX*1e3, 0, NY*DX*1e3]

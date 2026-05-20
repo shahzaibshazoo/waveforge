@@ -1,5 +1,5 @@
 """
-cpu_benchmark.py — Local CPU benchmark: CUDA-MEEP vs Meep
+cpu_benchmark.py — Local CPU benchmark: WaveForge vs Meep
 
 Run with:
     /home/zuu/miniconda3/bin/conda run -n pymeep python benchmarks/cpu_benchmark.py
@@ -23,7 +23,7 @@ N_WARMUP   = 20
 N_STEPS    = 200
 DX         = 1e-3   # 1 mm
 
-# ── CUDA-MEEP CPU benchmark ───────────────────────────────────────────────────
+# ── WaveForge CPU benchmark ───────────────────────────────────────────────────
 
 def run_cuda_meep_cpu(N):
     grid     = YeeGrid(N, N, dx=DX, dy=DX, device='cpu')
@@ -89,7 +89,7 @@ def main():
     import platform, datetime
 
     print('=' * 60)
-    print('  LOCAL CPU BENCHMARK: CUDA-MEEP vs Meep')
+    print('  LOCAL CPU BENCHMARK: WaveForge vs Meep')
     print(f'  Python {sys.version.split()[0]}  |  PyTorch {torch.__version__}')
     print(f'  Platform: {platform.processor() or platform.machine()}')
     print(f'  Date: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}')
@@ -98,8 +98,8 @@ def main():
     cuda_meep_rows = []
     meep_rows      = []
 
-    # ── CUDA-MEEP (CPU) ───────────────────────────────────────────────────────
-    print('\n--- CUDA-MEEP (CPU / PyTorch) ---')
+    # ── WaveForge (CPU) ───────────────────────────────────────────────────────
+    print('\n--- WaveForge (CPU / PyTorch) ---')
     for N in GRID_SIZES:
         m, ms = run_cuda_meep_cpu(N)
         cuda_meep_rows.append({'N': N, 'mcells_s': round(m, 2), 'ms_step': round(ms, 4)})
@@ -124,7 +124,7 @@ def main():
     # ── Comparison table ──────────────────────────────────────────────────────
     print()
     print('=' * 62)
-    print(f'  {"Grid":5s}  {"CUDA-MEEP CPU":>14s}  {"Meep CPU":>12s}  {"CUDA-MEEP/Meep":>14s}')
+    print(f'  {"Grid":5s}  {"WaveForge CPU":>14s}  {"Meep CPU":>12s}  {"WaveForge/Meep":>14s}')
     print('=' * 62)
     for i, N in enumerate(GRID_SIZES):
         cm = cuda_meep_rows[i]['mcells_s']
@@ -147,7 +147,7 @@ def main():
             'n_steps':   N_STEPS,
             'dx_mm':     DX * 1e3,
         },
-        'cuda_meep_cpu': cuda_meep_rows,
+        'waveforge_cpu': cuda_meep_rows,
         'meep_cpu':      meep_rows,
     }
 

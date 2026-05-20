@@ -1,5 +1,5 @@
 """
-boundaries.py — Absorbing boundary conditions for GPU-MEEP.
+boundaries.py — Absorbing boundary conditions for WaveForge.
 
 Provides:
   - _compute_pml_coeffs: helper for polynomial-graded PML coefficient arrays

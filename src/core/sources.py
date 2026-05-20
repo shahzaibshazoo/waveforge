@@ -1,5 +1,5 @@
 """
-sources.py — Electromagnetic source injection for GPU-MEEP.
+sources.py — Electromagnetic source injection for WaveForge.
 
 Provides waveform generators and source injectors that operate on raw PyTorch
 field tensors using soft (additive) injection, fully compatible with the Yee

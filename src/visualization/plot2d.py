@@ -1,5 +1,5 @@
 """
-plot2d.py — 2D field visualisation for GPU-MEEP.
+plot2d.py — 2D field visualisation for WaveForge.
 
 Provides two public exports:
 

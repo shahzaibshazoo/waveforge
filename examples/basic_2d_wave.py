@@ -1,5 +1,5 @@
 """
-basic_2d_wave.py — End-to-end GPU-MEEP smoke test and usage tutorial.
+basic_2d_wave.py — End-to-end WaveForge smoke test and usage tutorial.
 
 Demonstrates:
   - 2D TM FDTD simulation of a Gaussian pulse propagating in free space

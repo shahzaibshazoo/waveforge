@@ -1,4 +1,4 @@
-# CUDA-MEEP: GPU-Native FDTD Electromagnetic Simulation Engine
+# WaveForge: GPU-Native FDTD Electromagnetic Simulation Engine
 
 A GPU-accelerated 2D TM FDTD electromagnetic simulator built with PyTorch/CUDA.  
 Designed as a high-performance alternative to Meep for microwave imaging, MIMO radar, and inverse scattering.
@@ -17,7 +17,7 @@ Designed as a high-performance alternative to Meep for microwave imaging, MIMO r
 
 **Measured results (Tesla T4 GPU, Colab free tier):**
 
-| Grid | CUDA-MEEP GPU | CUDA-MEEP CPU | Meep CPU | **GPU / Meep** |
+| Grid | WaveForge GPU | WaveForge CPU | Meep CPU | **GPU / Meep** |
 |------|:-------------:|:-------------:|:--------:|:--------------:|
 | 64²  | 24 Mcells/s   | 3 Mcells/s    | 18 Mcells/s | 0.2× |
 | 128² | 25 Mcells/s   | 12 Mcells/s   | 20 Mcells/s | 1.0× |
