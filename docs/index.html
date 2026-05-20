@@ -3,314 +3,556 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WaveForge — GPU-Native FDTD Electromagnetic Simulation</title>
-  <meta name="description" content="WaveForge: PyTorch-powered GPU-native FDTD engine. 21.8× faster than Meep. Brain tumor detection, breast imaging, radar simulation."/>
+
+  <!-- Primary SEO -->
+  <title>WaveForge — GPU-Native FDTD Electromagnetic Simulation | 21.8× Faster than Meep</title>
+  <meta name="description" content="Open-source GPU-accelerated FDTD solver for EM wave simulation, microwave brain tumor imaging, breast cancer detection, EV radar, and through-wall sensing. 21.8× faster than Meep on Tesla T4."/>
+  <meta name="keywords" content="FDTD simulation, GPU electromagnetic, Maxwell equations, brain tumor detection, microwave imaging, PyTorch FDTD, MIMO radar, inverse scattering, meep alternative, CUDA electromagnetics"/>
+  <meta name="author" content="Shahzaib Ur Rehman"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://shahzaibshazoo.github.io/waveforge"/>
+
+  <!-- OpenGraph -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="WaveForge — GPU-Native FDTD Electromagnetic Simulation | 21.8× Faster than Meep"/>
+  <meta property="og:description" content="Open-source GPU-accelerated FDTD solver for EM wave simulation, microwave brain tumor imaging, breast cancer detection, EV radar, and through-wall sensing. 21.8× faster than Meep on Tesla T4."/>
+  <meta property="og:image" content="https://shahzaibshazoo.github.io/waveforge/assets/benchmark_comparison.png"/>
+  <meta property="og:url" content="https://shahzaibshazoo.github.io/waveforge"/>
+  <meta property="og:site_name" content="WaveForge"/>
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="WaveForge — GPU-Native FDTD Electromagnetic Simulation | 21.8× Faster than Meep"/>
+  <meta name="twitter:description" content="Open-source GPU-accelerated FDTD solver for EM wave simulation, microwave brain tumor imaging, breast cancer detection, EV radar, and through-wall sensing. 21.8× faster than Meep on Tesla T4."/>
+  <meta name="twitter:image" content="https://shahzaibshazoo.github.io/waveforge/assets/benchmark_comparison.png"/>
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "WaveForge",
+    "description": "Open-source GPU-accelerated FDTD solver for electromagnetic wave simulation. 21.8× faster than Meep on Tesla T4. Supports medical microwave imaging, radar simulation, and Maxwell equation solving.",
+    "applicationCategory": "ScientificApplication",
+    "operatingSystem": "Linux, Windows, macOS",
+    "programmingLanguage": "Python",
+    "runtimePlatform": "CUDA, PyTorch",
+    "url": "https://shahzaibshazoo.github.io/waveforge",
+    "downloadUrl": "https://github.com/shahzaibshazoo/waveforge",
+    "license": "https://opensource.org/licenses/MIT",
+    "author": {
+      "@type": "Person",
+      "name": "Shahzaib Ur Rehman",
+      "sameAs": "https://scholar.google.com/citations?user=-8eqch4AAAAJ"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "GPU-native FDTD solver",
+      "21.8x faster than Meep on Tesla T4",
+      "Brain tumor microwave imaging",
+      "Breast cancer detection simulation",
+      "EV automotive radar simulation",
+      "Through-wall sensing",
+      "MIMO circular antenna array",
+      "DAS backprojection imaging",
+      "PyTorch autograd differentiable physics"
+    ]
+  }
+  </script>
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+
+  <!-- Styles -->
   <link rel="stylesheet" href="assets/css/style.css"/>
 </head>
 <body>
 
-<!-- ── NAV ────────────────────────────────────────────────────────────── -->
-<nav class="nav" id="nav">
+<!-- ── NAV ────────────────────────────────────────────────────────────────── -->
+<nav class="nav" id="nav" role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
-    <a href="#" class="nav-logo">
-      <span class="logo-wave">〜</span> WaveForge
+    <a href="#" class="nav-logo" aria-label="WaveForge home">
+      <span class="logo-wave" aria-hidden="true">〜</span> WaveForge
     </a>
-    <ul class="nav-links">
+    <button class="nav-burger" id="nav-burger" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="nav-links" role="list">
       <li><a href="#features">Features</a></li>
       <li><a href="#benchmarks">Benchmarks</a></li>
       <li><a href="#simulations">Simulations</a></li>
       <li><a href="#quickstart">Quickstart</a></li>
       <li><a href="#docs">Docs</a></li>
-      <li><a href="https://github.com/shahzaibshazoo/waveforge" class="nav-github" target="_blank">GitHub ↗</a></li>
+      <li>
+        <a href="https://github.com/shahzaibshazoo/waveforge" class="nav-github" target="_blank" rel="noopener noreferrer" aria-label="View WaveForge on GitHub">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </li>
     </ul>
   </div>
 </nav>
 
-<!-- ── HERO ───────────────────────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero-bg">
-    <canvas id="wave-canvas"></canvas>
-  </div>
+<!-- ── HERO ───────────────────────────────────────────────────────────────── -->
+<section class="hero" aria-labelledby="hero-heading">
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
   <div class="hero-content">
-    <div class="hero-badge">Open Source · PyTorch · CUDA</div>
-    <h1 class="hero-title">
+    <div class="hero-badge" role="note">
+      Open Source &nbsp;·&nbsp; PyTorch &nbsp;·&nbsp; CUDA &nbsp;·&nbsp; MIT License
+    </div>
+
+    <h1 id="hero-heading" class="hero-title">
       <span class="gradient-text">WaveForge</span>
     </h1>
-    <p class="hero-subtitle">GPU-Native FDTD Electromagnetic Simulation Engine</p>
-    <p class="hero-desc">
-      Solve Maxwell's equations at GPU speed. 21.8× faster than Meep.<br/>
-      Brain tumor detection · Breast imaging · Radar simulation · EV sensors.
+
+    <p class="hero-typed" aria-live="polite">
+      <span id="typed-text"></span><span class="typed-cursor" aria-hidden="true">|</span>
     </p>
+
+    <p class="hero-desc">
+      Solve Maxwell's equations at GPU speed. The open-source Python library for
+      electromagnetic simulation, medical microwave imaging, and radar signal processing.
+    </p>
+
     <div class="hero-actions">
       <a href="#quickstart" class="btn-primary">Get Started</a>
-      <a href="https://github.com/shahzaibshazoo/waveforge" class="btn-secondary" target="_blank">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        View on GitHub
+      <a href="https://github.com/shahzaibshazoo/waveforge" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+        View on GitHub &#x2197;
       </a>
     </div>
-    <div class="hero-stats">
-      <div class="stat"><span class="stat-num">21.8×</span><span class="stat-label">faster than Meep</span></div>
-      <div class="stat-div"></div>
-      <div class="stat"><span class="stat-num">350</span><span class="stat-label">Mcells/s on T4</span></div>
-      <div class="stat-div"></div>
-      <div class="stat"><span class="stat-num">21/21</span><span class="stat-label">physics tests pass</span></div>
-      <div class="stat-div"></div>
-      <div class="stat"><span class="stat-num">10</span><span class="stat-label">simulation examples</span></div>
+
+    <div class="hero-stats" role="list" aria-label="Key metrics">
+      <div class="stat" role="listitem">
+        <span class="stat-num" data-count="21.8" data-suffix="&times;">0&times;</span>
+        <span class="stat-label">faster than Meep</span>
+      </div>
+      <div class="stat-div" aria-hidden="true"></div>
+      <div class="stat" role="listitem">
+        <span class="stat-num" data-count="350" data-suffix="">0</span>
+        <span class="stat-label">Mcells/s on T4</span>
+      </div>
+      <div class="stat-div" aria-hidden="true"></div>
+      <div class="stat" role="listitem">
+        <span class="stat-num" data-count="21" data-suffix="">0</span>
+        <span class="stat-label">tests pass</span>
+      </div>
+      <div class="stat-div" aria-hidden="true"></div>
+      <div class="stat" role="listitem">
+        <span class="stat-num" data-count="10" data-suffix="">0</span>
+        <span class="stat-label">simulations</span>
+      </div>
     </div>
   </div>
-  <div class="hero-scroll">scroll ↓</div>
+
+  <a href="#features" class="hero-scroll" aria-label="Scroll to features">scroll &#x2193;</a>
 </section>
 
-<!-- ── FEATURES ───────────────────────────────────────────────────────── -->
-<section class="section" id="features">
+<!-- ── FEATURES ───────────────────────────────────────────────────────────── -->
+<section class="section" id="features" aria-labelledby="features-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Why WaveForge?</h2>
-      <p>Built ground-up for GPU execution. Not a CPU solver with GPU bolted on.</p>
+      <p class="section-eyebrow">CAPABILITIES</p>
+      <h2 id="features-heading">Built for Serious EM Research</h2>
     </div>
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3>GPU-First Architecture</h3>
-        <p>All field updates, source injection, and boundary conditions execute as GPU tensor operations. Zero Python loops over spatial indices. CUDA Graphs for zero-overhead replay.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🧲</div>
-        <h3>Correct Yee Grid Physics</h3>
-        <p>Proper staggered leapfrog discretization of Maxwell's equations. Verified against analytical solutions — Fresnel reflection, waveguide modes, skin depth attenuation.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🧠</div>
-        <h3>Biomedical Imaging</h3>
-        <p>Per-cell tissue dielectrics (skin, adipose, brain, tumor). 16-antenna MIMO circular array with DAS backprojection. Brain clot and breast tumor localization.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📡</div>
-        <h3>Radar Simulation</h3>
-        <p>Through-wall radar, ULA beamforming at 10 GHz, EV radar scenarios. Delay-and-sum imaging pipeline fully vectorized on GPU.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔬</div>
-        <h3>Research-Grade Accuracy</h3>
-        <p>Dual-staggered CPML coefficients for −80 dB absorption. Mixed precision (BF16/FP32). Stability monitoring with physics-correct CFL enforcement.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🐍</div>
-        <h3>Pure Python API</h3>
-        <p>No compilation required. Works on any PyTorch-compatible GPU. Colab-ready with one-click T4 benchmark. Batch simulation support for MIMO dataset generation.</p>
-      </div>
+
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">&#x26A1;</div>
+        <h3>GPU-First</h3>
+        <p>Zero Python loops. Tensor ops end-to-end. CUDA Graphs for zero-overhead kernel replay across thousands of time steps.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">&#x1F9F2;</div>
+        <h3>Correct Physics</h3>
+        <p>Yee grid, leapfrog, CFL — verified against analytical solutions. Fresnel, waveguide modes, and skin depth all match theory.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">&#x1F9E0;</div>
+        <h3>Brain Imaging</h3>
+        <p>MIMO circular array, 1 GHz, DAS backprojection. Tumor localization with 16 antennas and full skull/brain/tumor dielectric model.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">&#x1F397;&#xFE0F;</div>
+        <h3>Breast Imaging</h3>
+        <p>Elliptical phantom, layered dielectrics from skin to gland. DAS backprojection achieves 5.4 mm localization error at 1 GHz.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">&#x1F4E1;</div>
+        <h3>Radar Systems</h3>
+        <p>EV ULA at 10 GHz, through-wall 1 GHz, WiFi multipath interference. Fully vectorized delay-and-sum beamforming on GPU.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon" aria-hidden="true">&#x1F52C;</div>
+        <h3>Research Grade</h3>
+        <p>Dual-staggered CPML, mixed precision BF16/FP32, adjoint-ready. Stability monitoring with physics-correct CFL enforcement.</p>
+      </article>
+
     </div>
   </div>
 </section>
 
-<!-- ── VS MEEP ────────────────────────────────────────────────────────── -->
-<section class="section section-dark" id="vs-meep">
+<!-- ── VS MEEP ────────────────────────────────────────────────────────────── -->
+<section class="section section-dark" id="vs-meep" aria-labelledby="vs-meep-heading">
   <div class="container">
     <div class="section-header">
-      <h2>WaveForge vs Meep</h2>
-      <p>Measured on real hardware. No synthetic benchmarks.</p>
+      <p class="section-eyebrow">COMPARISON</p>
+      <h2 id="vs-meep-heading">Why Switch from Meep?</h2>
     </div>
-    <div class="comparison-table-wrap">
+    <div class="comparison-table-wrap" role="region" aria-label="WaveForge vs Meep comparison">
       <table class="comparison-table">
+        <caption class="sr-only">Feature comparison: WaveForge versus Meep</caption>
         <thead>
           <tr>
-            <th>Feature</th>
-            <th class="col-wf">WaveForge</th>
-            <th class="col-meep">Meep</th>
+            <th scope="col">Feature</th>
+            <th scope="col" class="col-wf">WaveForge</th>
+            <th scope="col" class="col-meep">Meep</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Backend</td><td class="col-wf">PyTorch CUDA</td><td class="col-meep">C++ / OpenMP</td></tr>
-          <tr><td>512² throughput (GPU)</td><td class="col-wf highlight">350 Mcells/s</td><td class="col-meep">16 Mcells/s (CPU)</td></tr>
-          <tr><td>512² speedup</td><td class="col-wf highlight">21.8× faster</td><td class="col-meep">baseline</td></tr>
-          <tr><td>GPU support</td><td class="col-wf">✅ Native</td><td class="col-meep">❌ CPU only</td></tr>
-          <tr><td>Differentiable physics</td><td class="col-wf">✅ PyTorch autograd</td><td class="col-meep">❌</td></tr>
-          <tr><td>MIMO imaging pipeline</td><td class="col-wf">✅ Built-in</td><td class="col-meep">❌ DIY</td></tr>
-          <tr><td>Batch simulations</td><td class="col-wf">✅ Native</td><td class="col-meep">❌</td></tr>
-          <tr><td>Installation</td><td class="col-wf">pip install torch</td><td class="col-meep">conda + build</td></tr>
-          <tr><td>Medical tissue library</td><td class="col-wf">✅ 6 tissues</td><td class="col-meep">❌ Manual</td></tr>
-          <tr><td>Colab compatible</td><td class="col-wf">✅ One-click</td><td class="col-meep">⚠️ Complex setup</td></tr>
+          <tr>
+            <td>Backend</td>
+            <td class="col-wf">PyTorch CUDA</td>
+            <td class="col-meep">C++ / OpenMP</td>
+          </tr>
+          <tr>
+            <td>512&sup2; throughput</td>
+            <td class="col-wf highlight">350 Mcells/s (GPU)</td>
+            <td class="col-meep">16 Mcells/s (CPU)</td>
+          </tr>
+          <tr>
+            <td>512&sup2; speedup</td>
+            <td class="col-wf highlight">21.8&times; faster</td>
+            <td class="col-meep">baseline</td>
+          </tr>
+          <tr>
+            <td>GPU support</td>
+            <td class="col-wf">&#x2705; Native</td>
+            <td class="col-meep">&#x274C; CPU only</td>
+          </tr>
+          <tr>
+            <td>Differentiable physics</td>
+            <td class="col-wf">&#x2705; PyTorch autograd</td>
+            <td class="col-meep">&#x274C;</td>
+          </tr>
+          <tr>
+            <td>MIMO imaging pipeline</td>
+            <td class="col-wf">&#x2705; Built-in</td>
+            <td class="col-meep">&#x274C; DIY</td>
+          </tr>
+          <tr>
+            <td>Batch simulations</td>
+            <td class="col-wf">&#x2705; Native</td>
+            <td class="col-meep">&#x274C;</td>
+          </tr>
+          <tr>
+            <td>Installation</td>
+            <td class="col-wf">pip install torch</td>
+            <td class="col-meep">conda + build tools</td>
+          </tr>
+          <tr>
+            <td>Medical tissue library</td>
+            <td class="col-wf">&#x2705; 6 tissues</td>
+            <td class="col-meep">&#x274C; Manual</td>
+          </tr>
+          <tr>
+            <td>Colab compatible</td>
+            <td class="col-wf">&#x2705; One-click</td>
+            <td class="col-meep">&#x26A0;&#xFE0F; Complex setup</td>
+          </tr>
         </tbody>
       </table>
     </div>
-    <p class="comparison-note">* Meep excels at small grids (&lt;128²) on CPU due to optimized C++. WaveForge dominates at 256²+ where GPU bandwidth advantage kicks in.</p>
+    <p class="comparison-note">
+      * GPU crossover at 256&sup2;. Meep excels at small grids (&lt;128&sup2;) on CPU due to
+      optimized C++. WaveForge dominates at 256&sup2;+ where GPU memory bandwidth advantage kicks in.
+    </p>
   </div>
 </section>
 
-<!-- ── BENCHMARKS ─────────────────────────────────────────────────────── -->
-<section class="section" id="benchmarks">
+<!-- ── BENCHMARKS ─────────────────────────────────────────────────────────── -->
+<section class="section" id="benchmarks" aria-labelledby="benchmarks-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Benchmark Results</h2>
-      <p>Tesla T4 GPU (Colab free tier) vs laptop CPU</p>
+      <p class="section-eyebrow">PERFORMANCE</p>
+      <h2 id="benchmarks-heading">Measured on Real Hardware</h2>
+      <p class="section-sub">Tesla T4 GPU (Google Colab free tier) vs 4-core laptop CPU</p>
     </div>
+
     <div class="bench-grid">
-      <div class="bench-card">
-        <img src="../assets/benchmark_comparison.png" alt="Throughput comparison" loading="lazy"/>
-        <p>Throughput (Mcells/s) and GPU speedup across grid sizes</p>
+      <figure class="bench-card">
+        <img
+          src="../assets/benchmark_comparison.png"
+          alt="Bar chart comparing WaveForge GPU throughput vs Meep CPU throughput in Mcells/s across grid sizes 64x64, 128x128, 256x256, and 512x512"
+          loading="lazy"
+          width="800"
+          height="480"
+        />
+        <figcaption>Throughput (Mcells/s) and GPU speedup across four grid sizes on Tesla T4</figcaption>
+      </figure>
+      <figure class="bench-card">
+        <img
+          src="../assets/speedup_scaling.png"
+          alt="Line chart showing WaveForge GPU speedup over Meep scaling from 0.2x at 64x64 to 21.8x at 512x512 grid size"
+          loading="lazy"
+          width="800"
+          height="480"
+        />
+        <figcaption>GPU speedup vs Meep scales with grid size — peaks at 21.8&times; at 512&sup2;</figcaption>
+      </figure>
+    </div>
+
+    <div class="bench-numbers" role="list" aria-label="Speedup milestones">
+      <div class="bench-num slow" role="listitem">
+        <span data-count="0.2" data-suffix="&times;">0.2&times;</span>
+        <small>64&sup2; — GPU launch overhead</small>
       </div>
-      <div class="bench-card">
-        <img src="../assets/speedup_scaling.png" alt="Speedup scaling" loading="lazy"/>
-        <p>GPU speedup vs Meep scales with grid size — peaks at 21.8× at 512²</p>
+      <div class="bench-num neutral" role="listitem">
+        <span data-count="1.0" data-suffix="&times;">1.0&times;</span>
+        <small>128&sup2; — crossover point</small>
+      </div>
+      <div class="bench-num good" role="listitem">
+        <span data-count="6.0" data-suffix="&times;">6.0&times;</span>
+        <small>256&sup2; — GPU wins</small>
+      </div>
+      <div class="bench-num best" role="listitem">
+        <span data-count="21.8" data-suffix="&times;">21.8&times;</span>
+        <small>512&sup2; — GPU dominates</small>
       </div>
     </div>
-    <div class="bench-numbers">
-      <div class="bench-num"><span>0.2×</span><small>64² (GPU launch overhead)</small></div>
-      <div class="bench-num"><span>1.0×</span><small>128² (crossover point)</small></div>
-      <div class="bench-num"><span class="good">6.0×</span><small>256² GPU wins</small></div>
-      <div class="bench-num"><span class="best">21.8×</span><small>512² GPU dominates</small></div>
-    </div>
-    <div class="bench-card bench-card-full">
-      <img src="../assets/simulations/meep_comparison.png" alt="Per-scenario comparison" loading="lazy"/>
-      <p>CPU-only per-scenario comparison across all 7 simulation types</p>
-    </div>
+
+    <figure class="bench-card bench-card-full">
+      <img
+        src="../assets/simulations/meep_comparison.png"
+        alt="Side-by-side field snapshots comparing WaveForge GPU output to Meep CPU output across seven simulation scenarios including waveguide, scattering, and tissue penetration"
+        loading="lazy"
+        width="1200"
+        height="600"
+      />
+      <figcaption>Visual field comparison across all 7 simulation types — WaveForge vs Meep</figcaption>
+    </figure>
   </div>
 </section>
 
-<!-- ── SIMULATIONS ────────────────────────────────────────────────────── -->
-<section class="section section-dark" id="simulations">
+<!-- ── SIMULATIONS ────────────────────────────────────────────────────────── -->
+<section class="section section-dark" id="simulations" aria-labelledby="simulations-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Simulation Gallery</h2>
-      <p>10 ready-to-run examples covering fundamental EM physics and real-world applications</p>
+      <p class="section-eyebrow">GALLERY</p>
+      <h2 id="simulations-heading">10 Ready-to-Run Scenarios</h2>
+      <p class="section-sub">From basic Fresnel reflection to full MIMO brain tumor imaging</p>
     </div>
     <div class="gallery-grid">
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/10_breast_tumor_mimo.png" alt="Breast tumor MIMO" loading="lazy"/>
+          <img
+            src="../assets/simulations/10_breast_tumor_mimo.png"
+            alt="FDTD simulation of breast tumor detection using 16-antenna MIMO circular array at 1 GHz showing DAS backprojection image with 5.4mm localization error"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag medical">Medical</span>
+          <span class="gallery-tag tag-medical">Medical</span>
           <h4>Breast Tumor Detection</h4>
-          <p>16-antenna MIMO at 1 GHz. DAS localization error <strong>5.4mm</strong>. Adipose→Tumor Δεᵣ=50.</p>
+          <p>16-antenna MIMO at 1 GHz. DAS localization error <strong>5.4 mm</strong>. Adipose&rarr;Tumor &Delta;&epsilon;&#x1D26;=50.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/09_brain_clot_dataset_sample.png" alt="Brain clot dataset" loading="lazy"/>
+          <img
+            src="../assets/simulations/09_brain_clot_dataset_sample.png"
+            alt="FDTD simulation dataset showing four brain phantoms: one healthy and three with clots at different positions, with DAS backprojection reconstructions"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag medical">Medical</span>
+          <span class="gallery-tag tag-medical">Medical</span>
           <h4>Brain Clot Dataset</h4>
           <p>4-sample dataset: healthy + 3 clot positions. DAS backprojection across the brain cross-section.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/brain_mimo_imaging.png" alt="Brain MIMO" loading="lazy"/>
+          <img
+            src="../assets/brain_mimo_imaging.png"
+            alt="Full 16-transmitter circular MIMO array brain imaging simulation showing skull, brain, and tumor material map with correct tumor localization in backprojected image"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag medical">Medical</span>
+          <span class="gallery-tag tag-medical">Medical</span>
           <h4>Brain MIMO Imaging</h4>
           <p>Full 16-TX circular array. Skull/brain/tumor material map. Correct tumor localization.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/08_ev_radar_ula.png" alt="EV Radar ULA" loading="lazy"/>
+          <img
+            src="../assets/simulations/08_ev_radar_ula.png"
+            alt="EV automotive radar simulation with 8-element uniform linear array at 10 GHz showing DAS beamforming angular spectrum with target at 120 degrees"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag radar">Radar</span>
+          <span class="gallery-tag tag-radar">Radar</span>
           <h4>EV Automotive Radar</h4>
-          <p>8-element ULA at 10 GHz. Target at 120° from boresight. DAS beamforming angular spectrum.</p>
+          <p>8-element ULA at 10 GHz. Target at 120&deg; from boresight. DAS beamforming angular spectrum.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/05_through_wall_radar.png" alt="Through wall radar" loading="lazy"/>
+          <img
+            src="../assets/simulations/05_through_wall_radar.png"
+            alt="Through-wall radar FDTD simulation at 1 GHz showing electromagnetic pulse propagation through concrete wall with 9.2 dB loss and hidden metal target echo at step 500"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag radar">Radar</span>
+          <span class="gallery-tag tag-radar">Radar</span>
           <h4>Through-Wall Radar</h4>
-          <p>1 GHz pulse through concrete wall (−9.2 dB loss). Hidden metal target echo at step 500.</p>
+          <p>1 GHz pulse through concrete wall (&minus;9.2 dB loss). Hidden metal target echo at step 500.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/04_scattering_cylinder.png" alt="Cylinder scattering" loading="lazy"/>
+          <img
+            src="../assets/simulations/04_scattering_cylinder.png"
+            alt="Radar cross section simulation of electromagnetic wave scattering from a dielectric cylinder with permittivity 9 showing backscatter to forward scatter ratio of 1.53"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag physics">Physics</span>
+          <span class="gallery-tag tag-physics">Physics</span>
           <h4>Radar Cross Section</h4>
-          <p>Dielectric cylinder (εᵣ=9). Backscatter/forward = 1.53. 8-direction detector ring.</p>
+          <p>Dielectric cylinder (&epsilon;&#x1D26;=9). Backscatter/forward = 1.53. 8-direction detector ring.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/07_tissue_penetration.png" alt="Tissue penetration" loading="lazy"/>
+          <img
+            src="../assets/simulations/07_tissue_penetration.png"
+            alt="Microwave tissue penetration FDTD simulation showing electromagnetic attenuation through skin, fat, and muscle layers with log-scale curve confirming 13mm skin depth at 1 GHz"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag medical">Medical</span>
+          <span class="gallery-tag tag-medical">Medical</span>
           <h4>Microwave Tissue Penetration</h4>
-          <p>Skin→fat→muscle. Log-scale attenuation curve. Skin depth δ=13mm confirmed at 1 GHz.</p>
+          <p>Skin&rarr;fat&rarr;muscle. Log-scale attenuation curve. Skin depth &delta;=13 mm confirmed at 1 GHz.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/06_multipath_interference.png" alt="WiFi interference" loading="lazy"/>
+          <img
+            src="../assets/simulations/06_multipath_interference.png"
+            alt="WiFi multipath interference FDTD simulation at 2.4 GHz showing standing wave fringe pattern from two coherent sources with 62mm fringe spacing equal to half wavelength"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag physics">Physics</span>
+          <span class="gallery-tag tag-physics">Physics</span>
           <h4>WiFi Multipath (2.4 GHz)</h4>
-          <p>Two coherent sources. Fringe spacing = λ/2 = 62mm. Time-averaged standing wave pattern.</p>
+          <p>Two coherent sources. Fringe spacing = &lambda;/2 = 62 mm. Time-averaged standing wave pattern.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/02_dielectric_slab.png" alt="Dielectric slab" loading="lazy"/>
+          <img
+            src="../assets/simulations/02_dielectric_slab.png"
+            alt="Fresnel reflection FDTD simulation showing electromagnetic wave incident on glass slab with permittivity 4, measuring 11.1% reflection and 88.9% transmission matching analytical Fresnel formula"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag physics">Physics</span>
+          <span class="gallery-tag tag-physics">Physics</span>
           <h4>Fresnel Reflection</h4>
-          <p>Glass slab (εᵣ=4). Measured R=11.1%, T=88.9%. Matches analytical Fresnel formula exactly.</p>
+          <p>Glass slab (&epsilon;&#x1D26;=4). Measured R=11.1%, T=88.9%. Matches analytical Fresnel formula exactly.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="gallery-item">
+      <article class="gallery-item">
         <div class="gallery-img-wrap">
-          <img src="../assets/simulations/03_waveguide.png" alt="Waveguide" loading="lazy"/>
+          <img
+            src="../assets/simulations/03_waveguide.png"
+            alt="Parallel-plate waveguide FDTD simulation at 5 GHz showing guided TE mode between PEC walls with cutoff frequency 2.5 GHz and clear mode pattern"
+            loading="lazy"
+            width="400"
+            height="300"
+          />
         </div>
         <div class="gallery-info">
-          <span class="gallery-tag physics">Physics</span>
+          <span class="gallery-tag tag-physics">Physics</span>
           <h4>Parallel-Plate Waveguide</h4>
-          <p>5 GHz guided mode between PEC walls. f=5 GHz &gt; f_c=2.5 GHz. Mode pattern clearly resolved.</p>
+          <p>5 GHz guided mode between PEC walls. f=5 GHz &gt; f&#x2099;=2.5 GHz. Mode pattern clearly resolved.</p>
         </div>
-      </div>
+      </article>
 
     </div>
   </div>
 </section>
 
-<!-- ── QUICKSTART ─────────────────────────────────────────────────────── -->
-<section class="section" id="quickstart">
+<!-- ── QUICKSTART ─────────────────────────────────────────────────────────── -->
+<section class="section" id="quickstart" aria-labelledby="quickstart-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Get Started in 60 Seconds</h2>
+      <p class="section-eyebrow">GET STARTED</p>
+      <h2 id="quickstart-heading">Running in Under 2 Minutes</h2>
     </div>
+
     <div class="qs-grid">
       <div class="qs-option">
-        <div class="qs-num">1</div>
-        <h3>Google Colab (fastest)</h3>
-        <p>No setup. Free T4 GPU. Click and run.</p>
-        <a href="https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb" class="btn-primary" target="_blank">
-          Open in Colab ↗
-        </a>
+        <div class="qs-num" aria-hidden="true">1</div>
+        <h3>Google Colab</h3>
+        <p>No setup. Free T4 GPU. Click and run the full benchmark in under a minute.</p>
+        <a
+          href="https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb"
+          class="btn-primary"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Open in Colab &#x2197;</a>
       </div>
       <div class="qs-option">
-        <div class="qs-num">2</div>
+        <div class="qs-num" aria-hidden="true">2</div>
         <h3>Local Install</h3>
-        <div class="code-block">
+        <div class="code-block" role="region" aria-label="Local installation commands">
           <pre><code>git clone https://github.com/shahzaibshazoo/waveforge.git
 cd waveforge
 pip install torch numpy matplotlib pytest
@@ -318,9 +560,9 @@ python examples/basic_2d_wave.py</code></pre>
         </div>
       </div>
       <div class="qs-option">
-        <div class="qs-num">3</div>
+        <div class="qs-num" aria-hidden="true">3</div>
         <h3>Brain Tumor Demo</h3>
-        <div class="code-block">
+        <div class="code-block" role="region" aria-label="Brain tumor demo commands">
           <pre><code>python examples/brain_mimo_imaging.py
 # Runs 32 FDTD simulations
 # Saves: examples/output/brain_mimo_imaging.png</code></pre>
@@ -330,35 +572,35 @@ python examples/basic_2d_wave.py</code></pre>
 
     <div class="code-section">
       <h3>Minimal Example</h3>
-      <div class="code-block code-block-lg">
-        <pre><code><span class="code-comment"># 512×512 grid, Gaussian pulse, 1000 steps on GPU</span>
+      <div class="code-block code-block-lg" role="region" aria-label="Minimal WaveForge FDTD example">
+        <pre><code><span class="c"># 512x512 grid, Gaussian pulse, 1000 steps on GPU</span>
 import sys; sys.path.insert(0, 'src')
 from core import YeeGrid, FieldSet, MurABC
 from core import GaussianPulse, PointSource, SourceCollection, FDTD2D
 
-grid     = YeeGrid(512, 512, dx=1e-3, dy=1e-3, device=<span class="code-str">'cuda'</span>)
+grid     = YeeGrid(512, 512, dx=1e-3, dy=1e-3, device=<span class="s">'cuda'</span>)
 fields   = FieldSet(grid)
 boundary = MurABC(grid, fields.Hz)
 pulse    = GaussianPulse(amplitude=1.0, sigma=30*grid.dt)
-src      = PointSource(pulse, i=256, j=256, component=<span class="code-str">'Hz'</span>,
+src      = PointSource(pulse, i=256, j=256, component=<span class="s">'Hz'</span>,
                        grid=grid, N_steps=1000)
 sim      = FDTD2D(grid, fields, boundary, SourceCollection([src]))
 sim.run(1000, verbose=True)
 
-print(f<span class="code-str">"Throughput: {sim.mcells_per_second:.0f} Mcells/s"</span>)
-<span class="code-comment"># → ~350 Mcells/s on Tesla T4</span></code></pre>
+print(f<span class="s">"Throughput: {sim.mcells_per_second:.0f} Mcells/s"</span>)
+<span class="c"># -&gt; ~350 Mcells/s on Tesla T4</span></code></pre>
       </div>
     </div>
 
     <div class="code-section">
       <h3>Add Materials (Brain Phantom)</h3>
-      <div class="code-block code-block-lg">
+      <div class="code-block code-block-lg" role="region" aria-label="Brain phantom material setup code">
         <pre><code>from core import MaterialMap, TISSUE_LIBRARY
 
-mat_map = MaterialMap(grid, default=TISSUE_LIBRARY[<span class="code-str">'free_space'</span>])
-mat_map.add_circle(center=(75,75), radius=55, material=TISSUE_LIBRARY[<span class="code-str">'skull'</span>])
-mat_map.add_circle(center=(75,75), radius=51, material=TISSUE_LIBRARY[<span class="code-str">'brain'</span>])
-mat_map.add_circle(center=(95,75), radius=6,  material=TISSUE_LIBRARY[<span class="code-str">'tumor'</span>])
+mat_map = MaterialMap(grid, default=TISSUE_LIBRARY[<span class="s">'free_space'</span>])
+mat_map.add_circle(center=(75,75), radius=55, material=TISSUE_LIBRARY[<span class="s">'skull'</span>])
+mat_map.add_circle(center=(75,75), radius=51, material=TISSUE_LIBRARY[<span class="s">'brain'</span>])
+mat_map.add_circle(center=(95,75), radius=6,  material=TISSUE_LIBRARY[<span class="s">'tumor'</span>])
 Ca, Cb = mat_map.build()
 
 sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)</code></pre>
@@ -367,118 +609,149 @@ sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)</code></pre>
   </div>
 </section>
 
-<!-- ── DOCS ───────────────────────────────────────────────────────────── -->
-<section class="section section-dark" id="docs">
+<!-- ── DOCS ───────────────────────────────────────────────────────────────── -->
+<section class="section section-dark" id="docs" aria-labelledby="docs-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Documentation</h2>
+      <p class="section-eyebrow">DOCUMENTATION</p>
+      <h2 id="docs-heading">Everything You Need</h2>
     </div>
     <div class="docs-grid">
-      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core" class="doc-card" target="_blank">
-        <div class="doc-icon">📐</div>
+
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core" class="doc-card" target="_blank" rel="noopener noreferrer">
+        <div class="doc-icon" aria-hidden="true">&#x1F4D0;</div>
         <h4>Core API</h4>
-        <p>YeeGrid, FieldSet, FDTD2D, MurABC — the simulation engine</p>
+        <p>YeeGrid, FieldSet, FDTD2D, MurABC — the simulation engine primitives</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core/materials.py" class="doc-card" target="_blank">
-        <div class="doc-icon">🧬</div>
+
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core/materials.py" class="doc-card" target="_blank" rel="noopener noreferrer">
+        <div class="doc-icon" aria-hidden="true">&#x1F9EC;</div>
         <h4>Materials</h4>
-        <p>Per-cell εᵣ, σ coefficients. Tissue library. Custom material maps.</p>
+        <p>Per-cell &epsilon;&#x1D26;, &sigma; coefficients. Tissue library with 6 biological materials.</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core/sources.py" class="doc-card" target="_blank">
-        <div class="doc-icon">📻</div>
+
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/core/sources.py" class="doc-card" target="_blank" rel="noopener noreferrer">
+        <div class="doc-icon" aria-hidden="true">&#x1F4FB;</div>
         <h4>Sources</h4>
         <p>GaussianPulse, RickerWavelet, SinusoidalSource, PointSource, LineSource</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/visualization" class="doc-card" target="_blank">
-        <div class="doc-icon">📊</div>
+
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/src/visualization" class="doc-card" target="_blank" rel="noopener noreferrer">
+        <div class="doc-icon" aria-hidden="true">&#x1F4CA;</div>
         <h4>Visualization</h4>
-        <p>plot_field(), FieldAnimator — snapshots, animations, MP4 export</p>
+        <p>plot_field(), FieldAnimator — field snapshots, animations, MP4 export</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/examples" class="doc-card" target="_blank">
-        <div class="doc-icon">🎯</div>
+
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/examples" class="doc-card" target="_blank" rel="noopener noreferrer">
+        <div class="doc-icon" aria-hidden="true">&#x1F3AF;</div>
         <h4>Examples</h4>
-        <p>10 fully runnable scenarios from basic wave to breast tumor imaging</p>
+        <p>10 fully runnable scenarios from basic wave propagation to breast tumor imaging</p>
       </a>
-      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/docs/architecture" class="doc-card" target="_blank">
-        <div class="doc-icon">🏗️</div>
+
+      <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/docs/architecture" class="doc-card" target="_blank" rel="noopener noreferrer">
+        <div class="doc-icon" aria-hidden="true">&#x1F3D7;&#xFE0F;</div>
         <h4>Architecture</h4>
-        <p>System design, FDTD core, CUDA optimization, differentiable physics</p>
+        <p>System design, FDTD core, CUDA optimization strategy, differentiable physics</p>
       </a>
+
     </div>
   </div>
 </section>
 
-<!-- ── ROADMAP ────────────────────────────────────────────────────────── -->
-<section class="section" id="roadmap">
+<!-- ── ROADMAP ────────────────────────────────────────────────────────────── -->
+<section class="section" id="roadmap" aria-labelledby="roadmap-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Roadmap</h2>
+      <p class="section-eyebrow">ROADMAP</p>
+      <h2 id="roadmap-heading">What's Coming</h2>
     </div>
     <div class="roadmap-grid">
-      <div class="roadmap-item done">
-        <span class="rm-badge done-badge">✓ Done</span>
+
+      <div class="roadmap-item rm-done">
+        <span class="rm-badge rm-badge-done">&#x2713; Done</span>
         <h4>2D TM FDTD Engine</h4>
-        <p>Yee grid, leapfrog, CFL, correct Faraday/Ampere signs</p>
+        <p>Yee grid, leapfrog integration, CFL stability, correct Faraday/Ampere sign conventions</p>
       </div>
-      <div class="roadmap-item done">
-        <span class="rm-badge done-badge">✓ Done</span>
+
+      <div class="roadmap-item rm-done">
+        <span class="rm-badge rm-badge-done">&#x2713; Done</span>
         <h4>Lossy Materials</h4>
-        <p>Per-cell Ca/Cb, tissue library, brain/breast phantoms</p>
+        <p>Per-cell Ca/Cb update coefficients, tissue library, brain/breast phantom generators</p>
       </div>
-      <div class="roadmap-item done">
-        <span class="rm-badge done-badge">✓ Done</span>
+
+      <div class="roadmap-item rm-done">
+        <span class="rm-badge rm-badge-done">&#x2713; Done</span>
         <h4>MIMO Imaging Pipeline</h4>
-        <p>Circular array, DAS backprojection, tumor localization</p>
+        <p>Circular antenna array, DAS backprojection, 5.4 mm tumor localization verified</p>
       </div>
-      <div class="roadmap-item next">
-        <span class="rm-badge next-badge">Next</span>
-        <h4>Full CPML</h4>
-        <p>Psi field updates, −80 dB absorption, matched boundaries</p>
+
+      <div class="roadmap-item rm-next">
+        <span class="rm-badge rm-badge-next">Next</span>
+        <h4>Full CPML Boundaries</h4>
+        <p>Psi field updates, &minus;80 dB absorption target, matched layer boundaries</p>
       </div>
-      <div class="roadmap-item next">
-        <span class="rm-badge next-badge">Next</span>
+
+      <div class="roadmap-item rm-next">
+        <span class="rm-badge rm-badge-next">Next</span>
         <h4>TFSF + Near-to-Far</h4>
-        <p>Plane wave injection, far-field RCS computation</p>
+        <p>Total-field/scattered-field plane wave injection, far-field RCS computation</p>
       </div>
-      <div class="roadmap-item future">
-        <span class="rm-badge future-badge">Future</span>
+
+      <div class="roadmap-item rm-future">
+        <span class="rm-badge rm-badge-future">Future</span>
         <h4>Differentiable Physics</h4>
-        <p>Adjoint method, inverse design, PyTorch autograd integration</p>
+        <p>Adjoint method for inverse design, full PyTorch autograd integration</p>
       </div>
-      <div class="roadmap-item future">
-        <span class="rm-badge future-badge">Future</span>
+
+      <div class="roadmap-item rm-future">
+        <span class="rm-badge rm-badge-future">Future</span>
         <h4>3D Extension</h4>
-        <p>Full 3D Yee grid, volumetric imaging, multi-GPU</p>
+        <p>Full 3D Yee grid with Ez/Hy/Hx fields, volumetric imaging, multi-GPU via NCCL</p>
       </div>
-      <div class="roadmap-item future">
-        <span class="rm-badge future-badge">Future</span>
+
+      <div class="roadmap-item rm-future">
+        <span class="rm-badge rm-badge-future">Future</span>
         <h4>10K Dataset Generator</h4>
-        <p>Parallel MIMO dataset for AI reconstruction training</p>
+        <p>Parallel batched MIMO dataset generation for AI-based EM reconstruction training</p>
       </div>
+
     </div>
   </div>
 </section>
 
-<!-- ── AUTHOR ──────────────────────────────────────────────────────────── -->
-<section class="section section-dark" id="author">
+<!-- ── AUTHOR ─────────────────────────────────────────────────────────────── -->
+<section class="section section-dark" id="author" aria-labelledby="author-heading">
   <div class="container">
     <div class="author-card">
-      <div class="author-avatar">SR</div>
+      <div class="author-avatar" aria-label="Author initials: SR" role="img">SR</div>
       <div class="author-info">
-        <h3>Shahzaib Ur Rehman</h3>
+        <h2 id="author-heading" class="author-name">Shahzaib Ur Rehman</h2>
         <p class="author-degree">MS in Data Science</p>
         <p class="author-bio">
           WaveForge is built and maintained by Shahzaib Ur Rehman. Research interests include
           GPU-accelerated scientific computing, microwave medical imaging, and machine learning
-          for electromagnetic inverse problems.
+          for electromagnetic inverse problems. The project grew from a need for a fast, differentiable
+          FDTD solver that works in Python without a C++ build environment.
         </p>
         <div class="author-links">
-          <a href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao" target="_blank" class="author-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 100 14 7 7 0 000-14z"/></svg>
+          <a
+            href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="author-link"
+            aria-label="Shahzaib Ur Rehman on Google Scholar"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 100 14 7 7 0 000-14z"/></svg>
             Google Scholar
           </a>
-          <a href="https://github.com/shahzaibshazoo" target="_blank" class="author-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <a
+            href="https://github.com/shahzaibshazoo"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="author-link"
+            aria-label="Shahzaib Ur Rehman on GitHub"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             GitHub
           </a>
         </div>
@@ -487,34 +760,49 @@ sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)</code></pre>
   </div>
 </section>
 
-<!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
-<footer class="footer">
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer class="footer" role="contentinfo">
   <div class="container">
     <div class="footer-grid">
+
       <div class="footer-brand">
-        <span class="logo-wave">〜</span> <strong>WaveForge</strong>
-        <p>GPU-native FDTD electromagnetic simulation engine. Open source under MIT license.</p>
-        <p style="margin-top:0.5rem;font-size:0.82rem;color:#4a5568;">
-          By <a href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao" target="_blank" style="color:#63b3ed;">Shahzaib Ur Rehman</a>
+        <span class="logo-wave" aria-hidden="true">〜</span> <strong>WaveForge</strong>
+        <p>GPU-native FDTD electromagnetic simulation library. Open source under MIT license.</p>
+        <p class="footer-by">
+          By <a href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener noreferrer">Shahzaib Ur Rehman</a>
         </p>
       </div>
+
       <div class="footer-links">
         <h5>Project</h5>
-        <a href="https://github.com/shahzaibshazoo/waveforge" target="_blank">GitHub</a>
-        <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/examples" target="_blank">Examples</a>
-        <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/docs/architecture" target="_blank">Architecture</a>
-        <a href="https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb" target="_blank">Colab Notebook</a>
+        <a href="https://github.com/shahzaibshazoo/waveforge" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/examples" target="_blank" rel="noopener noreferrer">Examples</a>
+        <a href="https://github.com/shahzaibshazoo/waveforge/tree/main/docs/architecture" target="_blank" rel="noopener noreferrer">Architecture Docs</a>
+        <a href="https://colab.research.google.com/github/shahzaibshazoo/waveforge/blob/main/notebooks/colab_benchmark.ipynb" target="_blank" rel="noopener noreferrer">Colab Notebook</a>
       </div>
+
       <div class="footer-links">
         <h5>Applications</h5>
         <a href="#simulations">Brain Tumor Detection</a>
-        <a href="#simulations">Breast Imaging</a>
-        <a href="#simulations">EV Radar</a>
-        <a href="#simulations">Through-Wall Radar</a>
+        <a href="#simulations">Breast Cancer Imaging</a>
+        <a href="#simulations">EV Automotive Radar</a>
+        <a href="#simulations">Through-Wall Sensing</a>
       </div>
+
+      <div class="footer-links">
+        <h5>Contact</h5>
+        <a href="https://github.com/shahzaibshazoo/waveforge/issues" target="_blank" rel="noopener noreferrer">Open an Issue</a>
+        <a href="https://github.com/shahzaibshazoo" target="_blank" rel="noopener noreferrer">GitHub Profile</a>
+        <a href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener noreferrer">Google Scholar</a>
+      </div>
+
     </div>
+
     <div class="footer-bottom">
-      <p>WaveForge · MIT License · Built with PyTorch · <a href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao" target="_blank" style="color:#4a5568;">Shahzaib Ur Rehman</a></p>
+      <p>
+        &copy; 2025 WaveForge &mdash; MIT License &mdash; Built with PyTorch &mdash;
+        <a href="https://scholar.google.com/citations?user=-8eqch4AAAAJ&hl=en&oi=ao" target="_blank" rel="noopener noreferrer">Shahzaib Ur Rehman</a>
+      </p>
     </div>
   </div>
 </footer>
