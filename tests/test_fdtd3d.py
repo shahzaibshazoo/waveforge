@@ -165,11 +165,15 @@ def test_2d_equivalence():
     3D grid uses a different CFL dt (includes 1/dz² term) when Nz=1 with dz
     set. We verify: (a) no crash, (b) Hz is non-zero, (c) Hz is finite.
     """
+    from core.grid import compute_stable_dt
+
     Nx, Ny = 24, 24
     dx = 1e-3
     n_steps = 80
 
-    grid3 = YeeGrid(Nx, Ny, dx=dx, dy=dx, Nz=1, device=DEVICE)
+    # Use 3D-safe dt since FDTD3D checks CFL with dz even when Nz=1
+    dt_safe = compute_stable_dt(dx, dx, dx, courant=0.98)
+    grid3 = YeeGrid(Nx, Ny, dx=dx, dy=dx, Nz=1, dt=dt_safe, device=DEVICE)
     fields3 = FieldSet(grid3)
     boundary3 = MurABC3D(grid3, fields3.Hx, fields3.Hy, fields3.Hz)
     sigma = 20 * grid3.dt
