@@ -16,6 +16,12 @@ SinusoidalSource
     Continuous-wave sinusoidal source with smooth ramp-on envelope.
 RickerWavelet
     Ricker (Mexican-hat) wavelet — second derivative of a Gaussian.
+ModulatedGaussian
+    Carrier-modulated Gaussian envelope waveform.
+Chirp
+    Hann-windowed linear frequency-sweep waveform.
+PlaneSource
+    Full-plane soft source injector (xy, xz, or yz plane).
 PointSource
     Single-cell soft source injector.
 LineSource
@@ -39,7 +45,7 @@ from .grid import YeeGrid
 # Module-level constant
 # ---------------------------------------------------------------------------
 
-VALID_COMPONENTS: tuple[str, ...] = ("Ex", "Ey", "Hz")
+VALID_COMPONENTS: tuple[str, ...] = ("Ex", "Ey", "Ez", "Hx", "Hy", "Hz")
 """Field components that can be targeted by a 2-D TE-mode (TE-to-z) soft source.
 
 In 2-D TE-to-z notation the non-zero components are {Ex, Ey, Hz}, where the
@@ -411,6 +417,237 @@ class RickerWavelet(Waveform):
 
 
 # ---------------------------------------------------------------------------
+# ModulatedGaussian
+# ---------------------------------------------------------------------------
+
+
+class ModulatedGaussian(Waveform):
+    """Carrier-modulated Gaussian envelope: A*sin(2*pi*fc*t + phi)*exp(-(t-t0)^2/(2*sigma^2))"""
+
+    def __init__(
+        self,
+        amplitude: float = 1.0,
+        fc: float = 1e9,
+        sigma: float | None = None,
+        t0: float | None = None,
+        phi: float = 0.0,
+    ) -> None:
+        if amplitude == 0:
+            raise ValueError("amplitude must be non-zero.")
+        if fc <= 0:
+            raise ValueError(f"fc must be > 0, got {fc!r}")
+        if sigma is None:
+            raise ValueError("sigma must be supplied.")
+        if sigma <= 0:
+            raise ValueError(f"sigma must be > 0, got {sigma!r}")
+        if t0 is None:
+            t0 = 5.0 * sigma
+        if t0 <= 0:
+            raise ValueError(f"t0 must be > 0, got {t0!r}")
+
+        self._amplitude = float(amplitude)
+        self._fc = float(fc)
+        self._sigma = float(sigma)
+        self._t0 = float(t0)
+        self._phi = float(phi)
+
+        if not self.is_causal(0.0):
+            warnings.warn(
+                f"ModulatedGaussian: |f(0)|/|A| >= 1e-4 — waveform is not causal. "
+                f"With phi={self._phi:.4g} rad, consider increasing t0 (currently "
+                f"{self._t0:.4g} s) to >= 5*sigma ({5.0 * self._sigma:.4g} s).",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    def _compute(self, t: torch.Tensor) -> torch.Tensor:
+        carrier = torch.sin(2.0 * math.pi * self._fc * t + self._phi)
+        envelope = torch.exp(-((t - self._t0) ** 2) / (2.0 * self._sigma ** 2))
+        return self._amplitude * carrier * envelope
+
+    @property
+    def peak_time(self) -> float:
+        """Return the Gaussian envelope centre time t0."""
+        return self._t0
+
+    @property
+    def bandwidth(self) -> float:
+        """Return the Gaussian envelope bandwidth: 1 / (2*pi*sigma) Hz."""
+        return 1.0 / (2.0 * math.pi * self._sigma)
+
+    @property
+    def amplitude(self) -> float:
+        """Peak signed amplitude A."""
+        return self._amplitude
+
+
+# ---------------------------------------------------------------------------
+# Chirp
+# ---------------------------------------------------------------------------
+
+
+class Chirp(Waveform):
+    """Hann-windowed linear frequency sweep from f_start to f_end over [t_start, t_end]."""
+
+    def __init__(
+        self,
+        amplitude: float = 1.0,
+        f_start: float = 1e8,
+        f_end: float = 1e9,
+        t_start: float = 0.0,
+        t_end: float | None = None,
+        phi: float = 0.0,
+    ) -> None:
+        if amplitude == 0:
+            raise ValueError("amplitude must be non-zero.")
+        if f_start <= 0:
+            raise ValueError(f"f_start must be > 0, got {f_start!r}")
+        if f_end <= 0:
+            raise ValueError(f"f_end must be > 0, got {f_end!r}")
+        if t_start < 0:
+            raise ValueError(f"t_start must be >= 0, got {t_start!r}")
+        if t_end is None:
+            t_end = t_start + 10.0 / f_start
+        if t_end <= t_start:
+            raise ValueError(f"t_end ({t_end!r}) must be > t_start ({t_start!r})")
+
+        self._amplitude = float(amplitude)
+        self._f_start = float(f_start)
+        self._f_end = float(f_end)
+        self._t_start = float(t_start)
+        self._t_end = float(t_end)
+        self._phi = float(phi)
+        self._duration = self._t_end - self._t_start
+
+    def _compute(self, t: torch.Tensor) -> torch.Tensor:
+        in_window = (t >= self._t_start) & (t <= self._t_end)
+        tau = t - self._t_start
+        k = (self._f_end - self._f_start) / (2.0 * self._duration)
+        inst_phase = 2.0 * math.pi * (self._f_start * tau + k * tau ** 2) + self._phi
+        hann = 0.5 * (1.0 - torch.cos(2.0 * math.pi * tau / self._duration))
+        result = self._amplitude * torch.sin(inst_phase) * hann
+        return torch.where(in_window, result, torch.zeros_like(result))
+
+    @property
+    def peak_time(self) -> float:
+        """Return the midpoint of the sweep window."""
+        return (self._t_start + self._t_end) / 2.0
+
+    @property
+    def bandwidth(self) -> float:
+        """Return the swept bandwidth |f_end - f_start| in Hz."""
+        return abs(self._f_end - self._f_start)
+
+    @property
+    def amplitude(self) -> float:
+        """Peak signed amplitude A."""
+        return self._amplitude
+
+
+# ---------------------------------------------------------------------------
+# PlaneSource
+# ---------------------------------------------------------------------------
+
+
+class PlaneSource:
+    """Full-plane soft source: uniform scalar injection across an entire 'xy', 'xz', or 'yz' plane."""
+
+    def __init__(
+        self,
+        waveform: Waveform,
+        plane: str,
+        position: int,
+        component: str = "Hz",
+        *,
+        grid: YeeGrid,
+        N_steps: int,
+    ) -> None:
+        if component not in VALID_COMPONENTS:
+            raise ValueError(
+                f"component must be one of {VALID_COMPONENTS}, got {component!r}"
+            )
+        if plane not in ('xy', 'xz', 'yz'):
+            raise ValueError(f"plane must be 'xy', 'xz', or 'yz', got {plane!r}")
+
+        if plane == 'xy':
+            limit = grid.Nz
+            n_cells = grid.Nx * grid.Ny
+        elif plane == 'xz':
+            limit = grid.Ny
+            n_cells = grid.Nx * grid.Nz
+        else:  # 'yz'
+            limit = grid.Nx
+            n_cells = grid.Ny * grid.Nz
+
+        if not (0 <= position < limit):
+            raise ValueError(
+                f"position={position} out of range [0, {limit}) for plane={plane!r}"
+            )
+
+        self._component: str = component
+        self._plane: str = plane
+        self._position: int = position
+        self._N_steps: int = N_steps
+        self._n_cells: int = n_cells
+        self._waveform_tensor: torch.Tensor = waveform.build(
+            N_steps, grid.dt, grid.device, grid.dtype
+        )
+
+    def step(self, fields_dict: dict[str, torch.Tensor], n: int) -> None:
+        """Inject the source value at time step *n* across the entire plane.
+
+        Performs a soft (additive) injection: each cell in the plane receives
+        ``waveform[n]`` additively.  The 0-dim scalar broadcasts over the 2-D
+        plane slice with no allocation.
+
+        Parameters
+        ----------
+        fields_dict : dict[str, torch.Tensor]
+            Mapping of component name to field tensor.
+        n : int
+            Current time step index.
+        """
+        w_now = self._waveform_tensor[n]          # 0-dim scalar tensor
+        target = fields_dict[self._component]
+        if self._plane == 'xy':
+            target[..., :, :, self._position] += w_now
+        elif self._plane == 'xz':
+            target[..., :, self._position, :] += w_now
+        else:  # 'yz'
+            target[..., self._position, :, :] += w_now
+
+    @property
+    def n_cells(self) -> int:
+        """Number of injection cells in the plane."""
+        return self._n_cells
+
+    @property
+    def waveform_memory_bytes(self) -> int:
+        """VRAM consumed by the pre-computed waveform tensor (bytes)."""
+        return self._N_steps * self._waveform_tensor.element_size()
+
+    @property
+    def is_precomputed(self) -> bool:
+        """Always ``True``; waveform is pre-computed at construction time."""
+        return True
+
+    @property
+    def component(self) -> str:
+        """Target field component name."""
+        return self._component
+
+    @property
+    def plane(self) -> str:
+        """The injection plane: 'xy', 'xz', or 'yz'."""
+        return self._plane
+
+    @property
+    def position(self) -> int:
+        """Fixed index along the axis perpendicular to the plane."""
+        return self._position
+
+
+# ---------------------------------------------------------------------------
 # PointSource
 # ---------------------------------------------------------------------------
 
@@ -442,6 +679,7 @@ class PointSource:
         j: int,
         component: str = "Hz",
         *,
+        k: int = 0,
         grid: YeeGrid,
         N_steps: int,
     ) -> None:
@@ -457,6 +695,10 @@ class PointSource:
             raise ValueError(
                 f"j={j} out of range [0, {grid.Ny})"
             )
+        if not (0 <= k < grid.Nz):
+            raise ValueError(
+                f"k={k} out of range [0, {grid.Nz})"
+            )
 
         self._component = component
         self._N_steps = N_steps
@@ -468,7 +710,7 @@ class PointSource:
         dev = grid.device
         self._i_idx = torch.tensor([i], dtype=torch.long, device=dev)
         self._j_idx = torch.tensor([j], dtype=torch.long, device=dev)
-        self._k_idx = torch.tensor([0], dtype=torch.long, device=dev)
+        self._k_idx = torch.tensor([k], dtype=torch.long, device=dev)
         self._amp = torch.tensor([1.0], dtype=grid.dtype, device=dev)
 
     # ------------------------------------------------------------------
@@ -684,7 +926,7 @@ class SourceCollection:
 
     Parameters
     ----------
-    sources : list[PointSource | LineSource]
+    sources : list[Union[PointSource, LineSource, "PlaneSource"]]
         List of source objects to manage.  Mixed component types are
         permitted; each source is stepped individually in order.
     """
