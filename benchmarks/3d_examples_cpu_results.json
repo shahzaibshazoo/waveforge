@@ -1,0 +1,82 @@
+[
+  {
+    "file": "3d_01_basic_wave.py",
+    "status": "PASS",
+    "time_s": 32.2,
+    "mcells_s": 6.1,
+    "grid": "64x64x64",
+    "error": ""
+  },
+  {
+    "file": "3d_02_dielectric_slab.py",
+    "status": "PASS",
+    "time_s": 29.6,
+    "mcells_s": 3.4,
+    "grid": "100x32x32",
+    "error": ""
+  },
+  {
+    "file": "3d_03_waveguide.py",
+    "status": "PASS",
+    "time_s": 19.3,
+    "mcells_s": 8.4,
+    "grid": "unknown",
+    "error": ""
+  },
+  {
+    "file": "3d_04_scattering_sphere.py",
+    "status": "PASS",
+    "time_s": 45.0,
+    "mcells_s": 4.4,
+    "grid": "64x64x64",
+    "error": ""
+  },
+  {
+    "file": "3d_05_through_wall_radar.py",
+    "status": "PASS",
+    "time_s": 30.9,
+    "mcells_s": 5.0,
+    "grid": "80x48x48",
+    "error": ""
+  },
+  {
+    "file": "3d_06_multipath_interference.py",
+    "status": "ERROR",
+    "time_s": 31.4,
+    "mcells_s": 6.5,
+    "grid": "64x64x64",
+    "error": "  Error:              26.5 mm"
+  },
+  {
+    "file": "3d_07_tissue_penetration.py",
+    "status": "PASS",
+    "time_s": 29.7,
+    "mcells_s": 3.5,
+    "grid": "100x32x32",
+    "error": ""
+  },
+  {
+    "file": "3d_08_ev_radar_ula.py",
+    "status": "PASS",
+    "time_s": 52.5,
+    "mcells_s": 7.8,
+    "grid": "64x64x64",
+    "error": ""
+  },
+  {
+    "file": "3d_09_brain_clot_dataset.py",
+    "status": "PASS",
+    "time_s": 37.6,
+    "mcells_s": 7.5,
+    "grid": "48x48x48",
+    "error": ""
+  },
+  {
+    "file": "3d_10_breast_tumor_mimo.py",
+    "status": "PASS",
+    "time_s": 45.2,
+    "mcells_s": 9.6,
+    "grid": "64x64x64",
+    "error": ""
+  }
+]
