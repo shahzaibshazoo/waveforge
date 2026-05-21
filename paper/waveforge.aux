@@ -1,0 +1,89 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{yee1966numerical}
+\citation{taflove2005computational}
+\citation{hagness1997three,fear2002breast}
+\citation{chen2020gpu,winter2015fdtd}
+\citation{thankane2021deeplearning}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
+\citation{taflove2005computational}
+\citation{oskooi2010meep}
+\citation{chen2020gpu}
+\citation{winter2015fdtd}
+\citation{mur1981absorbing}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Background and Related Work}{2}{section.2}\protected@file@percent }
+\newlabel{sec:related}{{2}{2}{Background and Related Work}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}The Yee Algorithm}{2}{subsection.2.1}\protected@file@percent }
+\newlabel{eq:faraday}{{1}{2}{The Yee Algorithm}{equation.1}{}}
+\newlabel{eq:ampere}{{2}{2}{The Yee Algorithm}{equation.2}{}}
+\newlabel{eq:cfl}{{3}{2}{The Yee Algorithm}{equation.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Existing FDTD Software}{2}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}System Design}{2}{section.3}\protected@file@percent }
+\newlabel{sec:design}{{3}{2}{System Design}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Module Architecture}{2}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}The Time Stepper}{2}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:stepper}{{3.2}{2}{The Time Stepper}{subsection.3.2}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}Hx Faraday update — vectorised slice addition}{2}{lstlisting.1}\protected@file@percent }
+\citation{mur1981absorbing}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces Single FDTD time step (3D)}}{3}{algorithm.1}\protected@file@percent }
+\newlabel{alg:step}{{1}{3}{The Time Stepper}{algorithm.1}{}}
+\newlabel{eq:ampere_lossy}{{4}{3}{The Time Stepper}{equation.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Absorbing Boundary Conditions}{3}{section.4}\protected@file@percent }
+\newlabel{sec:boundaries}{{4}{3}{Absorbing Boundary Conditions}{section.4}{}}
+\newlabel{eq:mur}{{7}{3}{Absorbing Boundary Conditions}{equation.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Sources and Waveforms}{3}{section.5}\protected@file@percent }
+\newlabel{sec:sources}{{5}{3}{Sources and Waveforms}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Waveform Library}{3}{subsection.5.1}\protected@file@percent }
+\citation{oskooi2010meep}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Spatial Injectors}{4}{subsection.5.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}PlaneSource injection for an xz-plane}{4}{lstlisting.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Experimental Results}{4}{section.6}\protected@file@percent }
+\newlabel{sec:results}{{6}{4}{Experimental Results}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}3D Grid-Scaling Benchmark}{4}{subsection.6.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces 3D Grid-Scaling: Tesla T4 vs CPU (Mcells/s)}}{4}{table.1}\protected@file@percent }
+\newlabel{tab:3d_scaling}{{1}{4}{3D Grid-Scaling: Tesla T4 vs CPU (Mcells/s)}{table.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}2D Grid-Scaling and PyMEEP Comparison}{4}{subsection.6.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces 2D Grid-Scaling: WaveForge CPU vs PyMEEP CPU (Mcells/s)}}{4}{table.2}\protected@file@percent }
+\newlabel{tab:2d_scaling}{{2}{4}{2D Grid-Scaling: WaveForge CPU vs PyMEEP CPU (Mcells/s)}{table.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces 2D GPU Scaling: WaveForge on Kaggle Tesla T4 (Mcells/s)}}{4}{table.3}\protected@file@percent }
+\newlabel{tab:2d_gpu}{{3}{4}{2D GPU Scaling: WaveForge on Kaggle Tesla T4 (Mcells/s)}{table.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}Scene-Level Benchmarks: WaveForge vs PyMEEP}{4}{subsection.6.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Scene-Level Throughput: PyMEEP vs WaveForge (Mcells/s)}}{5}{table.4}\protected@file@percent }
+\newlabel{tab:scene}{{4}{5}{Scene-Level Throughput: PyMEEP vs WaveForge (Mcells/s)}{table.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}All 10 3D Examples on GPU}{5}{subsection.6.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 3D Examples: CPU vs Tesla T4 GPU Throughput}}{5}{table.5}\protected@file@percent }
+\newlabel{tab:3d_examples}{{5}{5}{3D Examples: CPU vs Tesla T4 GPU Throughput}{table.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Physics Validation and Test Suite}{5}{section.7}\protected@file@percent }
+\newlabel{sec:validation}{{7}{5}{Physics Validation and Test Suite}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}Test Coverage}{5}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Energy Conservation}{5}{subsection.7.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}Octant Symmetry}{5}{subsection.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.4}Mie Scattering}{5}{subsection.7.4}\protected@file@percent }
+\citation{taflove2005computational}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.5}Waveguide Cutoff}{6}{subsection.7.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Application Examples}{6}{section.8}\protected@file@percent }
+\newlabel{sec:examples}{{8}{6}{Application Examples}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}Medical Microwave Imaging}{6}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}Automotive Radar}{6}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}Through-Wall Radar}{6}{subsection.8.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {9}Performance Analysis}{6}{section.9}\protected@file@percent }
+\newlabel{sec:performance}{{9}{6}{Performance Analysis}{section.9}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {10}Limitations}{6}{section.10}\protected@file@percent }
+\newlabel{sec:limitations}{{10}{6}{Limitations}{section.10}{}}
+\bibstyle{plain}
+\bibdata{waveforge}
+\bibcite{chen2020gpu}{1}
+\bibcite{fear2002breast}{2}
+\bibcite{hagness1997three}{3}
+\bibcite{mur1981absorbing}{4}
+\bibcite{oskooi2010meep}{5}
+\bibcite{taflove2005computational}{6}
+\bibcite{thankane2021deeplearning}{7}
+\bibcite{winter2015fdtd}{8}
+\bibcite{yee1966numerical}{9}
+\@writefile{toc}{\contentsline {section}{\numberline {11}Conclusion}{7}{section.11}\protected@file@percent }
+\newlabel{sec:conclusion}{{11}{7}{Conclusion}{section.11}{}}
+\gdef \@abspage@last{7}

@@ -1,0 +1,63 @@
+\begin{thebibliography}{1}
+
+\bibitem{chen2020gpu}
+Rui Chen, Zhongyi Du, Zhenbao Ye, and Qiang-Ming Cai.
+\newblock {GPU}-accelerated {FDTD} modeling of radio-wave propagation in
+  complex indoor environments.
+\newblock {\em IEEE Transactions on Antennas and Propagation},
+  68(6):4789--4800, 2020.
+
+\bibitem{fear2002breast}
+Elise~C. Fear, Xu~Li, Susan~C. Hagness, and Maria~A. Stuchly.
+\newblock Confocal microwave imaging for breast cancer detection: Localization
+  of tumors in three dimensions.
+\newblock {\em IEEE Transactions on Biomedical Engineering}, 49(8):812--822,
+  2002.
+
+\bibitem{hagness1997three}
+Susan~C. Hagness, Allen Taflove, and Jack~E. Bridges.
+\newblock Three-dimensional {FDTD} analysis of a pulsed microwave confocal
+  system for breast cancer detection: Design of an antenna-array element.
+\newblock {\em IEEE Transactions on Antennas and Propagation}, 47(5):783--791,
+  1999.
+
+\bibitem{mur1981absorbing}
+Gerrit Mur.
+\newblock Absorbing boundary conditions for the finite-difference approximation
+  of the time-domain electromagnetic-field equations.
+\newblock {\em IEEE Transactions on Electromagnetic Compatibility},
+  23(4):377--382, 1981.
+
+\bibitem{oskooi2010meep}
+Ardavan~F. Oskooi, David Roundy, Mihai Ibanescu, Peter Bermel, J.~D.
+  Joannopoulos, and Steven~G. Johnson.
+\newblock {MEEP}: A flexible free-software package for electromagnetic
+  simulations by the {FDTD} method.
+\newblock {\em Computer Physics Communications}, 181(3):687--702, 2010.
+
+\bibitem{taflove2005computational}
+Allen Taflove and Susan~C. Hagness.
+\newblock {\em Computational Electrodynamics: The Finite-Difference Time-Domain
+  Method}.
+\newblock Artech House, 3rd edition, 2005.
+
+\bibitem{thankane2021deeplearning}
+Dilip~K. Thankane and Ahmed~M. El-Sayed.
+\newblock Deep learning for microwave brain stroke detection and classification
+  using electromagnetic simulations.
+\newblock {\em Sensors}, 21(4):1319, 2021.
+
+\bibitem{winter2015fdtd}
+Falk Winter, Ali Sadeghi-Esfahlan, and Natalia~V. Menshutina.
+\newblock {GPU}-accelerated nonstandard {FDTD} solver for electromagnetics.
+\newblock In {\em 2015 IEEE International Symposium on Antennas and
+  Propagation}, pages 2152--2153, 2015.
+
+\bibitem{yee1966numerical}
+Kane~S. Yee.
+\newblock Numerical solution of initial boundary value problems involving
+  maxwell's equations in isotropic media.
+\newblock {\em IEEE Transactions on Antennas and Propagation}, 14(3):302--307,
+  1966.
+
+\end{thebibliography}
