@@ -237,23 +237,23 @@ ax3d.set_title(
 # ---------------------------------------------------------------------------
 
 legend_elements = [
-    mpatches.Patch(facecolor='#D4A574', alpha=0.6, edgecolor='#AAAAAA', label='Scalp (r=82 mm)'),
-    mpatches.Patch(facecolor='#C8C8C8', alpha=0.6, edgecolor='#AAAAAA', label='Skull (r=72 mm)'),
-    mpatches.Patch(facecolor='#C09898', alpha=0.7, edgecolor='#AAAAAA', label='Brain tissue (r=54 mm)'),
-    mpatches.Patch(facecolor='#E8C4C4', alpha=0.8, edgecolor='#AAAAAA', label='White matter (r=30 mm)'),
+    mpatches.Patch(facecolor='#D4A574', alpha=1.0, edgecolor='#CCAA88', label='Scalp (r=82 mm)'),
+    mpatches.Patch(facecolor='#C8C8C8', alpha=1.0, edgecolor='#AAAAAA', label='Skull (r=72 mm)'),
+    mpatches.Patch(facecolor='#C09898', alpha=1.0, edgecolor='#AA8888', label='Brain tissue (r=54 mm)'),
+    mpatches.Patch(facecolor='#E8C4C4', alpha=1.0, edgecolor='#CCAAAA', label='White matter (r=30 mm)'),
     mpatches.Patch(facecolor='#CC1111', alpha=1.0, edgecolor='#FF4444', label='Haemorrhage (r=12 mm)'),
-    mpatches.Patch(facecolor='#FFA040', alpha=0.9, edgecolor='#FFCC80', label='UWB Antenna (×8, r=90 mm)'),
-    plt.Line2D([0], [0], linestyle='--', color='#40E0FF', linewidth=1.2, label='TX→RX signal arc'),
+    mpatches.Patch(facecolor='#FFA040', alpha=1.0, edgecolor='#FFCC80', label='UWB Antenna (x8, r=90 mm)'),
+    plt.Line2D([0], [0], linestyle='--', color='#40E0FF', linewidth=1.5, label='TX->RX signal arc'),
 ]
 
 leg = ax3d.legend(
     handles=legend_elements,
     loc='upper left',
     bbox_to_anchor=(-0.02, 1.02),
-    fontsize=7.5,
-    framealpha=0.25,
+    fontsize=8.0,
+    framealpha=0.55,
     facecolor='#1a1f2e',
-    edgecolor='#444455',
+    edgecolor='#5566AA',
     labelcolor='white',
     ncol=1,
 )
