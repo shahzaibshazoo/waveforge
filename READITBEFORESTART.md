@@ -442,7 +442,7 @@ sources.step({"Ex": Ex, "Ey": Ey, "Ez": Ez, "Hx": Hx, "Hy": Hy, "Hz": Hz}, step_
 
 ---
 
-## START HERE
+## START HERE (3D Engine)
 
 1. Read `docs/3d-extension/PHASE_2_ENGINE_ARCHITECTURE.md`
 2. Read `src/core/fdtd2d.py` (your template)
@@ -451,4 +451,215 @@ sources.step({"Ex": Ex, "Ey": Ey, "Ez": Ez, "Hx": Hx, "Hy": Hy, "Hz": Hz}, step_
 5. Run tests, fix failures
 6. Proceed to Phase 3
 
-**Go.**
+**The 3D engine (Phases 2–8) is COMPLETE. All 67 tests pass.  
+Peak GPU: 567 Mcells/s at 384³ on Tesla T4.**
+
+---
+
+## PHASE 9: MEDICALLY REALISTIC BRAIN HAEMORRHAGE DATASET
+
+### Goal
+
+Generate a large-scale, publication-quality FDTD dataset for training a deep
+learning model to detect and classify intracranial haemorrhages from microwave
+backscatter measurements. The dataset must pass peer review.
+
+---
+
+### The 5 Scientific Rules That Reviewers Enforce
+
+**Rule 1 — Frequency-Dependent Tissue Properties (Cole-Cole model)**
+
+Static eps_r/sigma values are wrong for broadband problems. Use the 4-pole
+Cole-Cole model:
+
+```
+eps*(f) = eps_inf + sum_k [ (eps_s_k - eps_inf_k) / (1 + (j*omega*tau_k)^(1-alpha_k)) ]
+          + sigma_s / (j * omega * eps0)
+```
+
+Key tissue values at 1 GHz (Gabriel et al. 1996):
+
+| Tissue      | eps_r | sigma (S/m) |
+|-------------|-------|-------------|
+| Scalp       | 41.4  | 0.87        |
+| Skull       | 13.1  | 0.10        |
+| CSF         | 68.6  | 2.92        |
+| Gray matter | 52.7  | 0.94        |
+| White matter| 38.1  | 0.61        |
+| Blood (fresh)| 61.0 | 1.57        |
+| Blood (clot)| 45.0  | 0.93        |
+
+Implementation needed: `core/materials.py` → add `ColeColeDispersive` class
+and `BRAIN_TISSUE_LIBRARY_1GHZ` dict with validated values.
+
+**Rule 2 — Anatomically Constrained Bleed Placement**
+
+Bleeds must only appear inside anatomically valid zones:
+
+| Type          | Region                                 |
+|---------------|----------------------------------------|
+| Epidural      | Between skull inner surface and dura   |
+| Subdural      | Between dura and brain surface         |
+| Intracerebral | Inside gray/white matter               |
+
+Implementation needed: `datasets/brain/phantom.py` → `BrainPhantom3D` class
+with methods `sample_epidural_position()`, `sample_subdural_position()`,
+`sample_intracerebral_position()`. Must reject positions that fall inside bone.
+
+**Rule 3 — Blood Aging Physics**
+
+Include both fresh and clotted blood:
+
+| Stage    | Time     | eps_r | sigma | Note                      |
+|----------|----------|-------|-------|---------------------------|
+| Acute    | 0–6h     | 61.0  | 1.57  | High water content        |
+| Subacute | 6h–3d    | 52.0  | 1.20  | Water reabsorbed          |
+| Chronic  | >3d      | 45.0  | 0.93  | Clotted, low permittivity |
+
+**Rule 4 — Balanced Classes**
+
+Target class distribution:
+- 50% Healthy (no bleed)
+- 17% Epidural
+- 17% Subdural
+- 16% Intracerebral
+
+Size categories: small (r=2–4 cells), medium (r=4–7 cells), large (r=7–12 cells).
+
+**Rule 5 — Independent Test Phantom**
+
+Create at least 2 structurally different head phantoms:
+- Phantom A (training/validation): standard adult male proportions
+- Phantom B (testing only): different skull thickness, brain volume
+
+---
+
+### What Needs to Be Built
+
+#### New library components needed in `src/`:
+
+```
+src/core/dispersive.py          ← Cole-Cole tissue model, frequency sampling
+src/datasets/
+├── __init__.py
+├── brain/
+│   ├── phantom.py              ← BrainPhantom3D: sphere shells, CSF, GM/WM
+│   ├── bleed.py                ← BleedRegion: type, position, size, age
+│   ├── tissue_library.py       ← GABRIEL_1996 tissue parameters at 1 GHz
+│   └── antenna.py              ← AntennaArray: ring placement, TX/RX schedule
+├── generator.py                ← DatasetGenerator: batched parallel simulation
+└── utils.py                    ← Signal normalisation, SNR, augmentation
+```
+
+#### Dataset generator script:
+
+```
+datasets/generate_brain_dataset.py
+  - Takes: n_samples, output_dir, n_tx, grid_size, freq_ghz
+  - Produces: .npz files with keys:
+      'signals'  : shape (n_tx, n_rx, n_steps) — raw FDTD backscatter
+      'das_image': shape (H, W) — DAS backprojection in axial plane
+      'label'    : int (0=healthy, 1=epidural, 2=subdural, 3=intracerebral)
+      'bleed_pos': (x,y,z) in mm — ground truth centre
+      'bleed_r'  : float — radius in mm
+      'bleed_age': str — 'acute'|'subacute'|'chronic'
+      'phantom_id': int — which head phantom was used
+```
+
+#### Kaggle notebook for dataset generation:
+
+```
+notebooks/waveforge_brain_dataset_generator.ipynb
+  - Runs on Kaggle 2×T4 (parallel phantoms on each GPU)
+  - Generates N=1000 samples per run (~3h on T4)
+  - Saves to Kaggle output as .npz
+```
+
+---
+
+### Physics Parameters for the Dataset
+
+```python
+# Grid
+Nx = Ny = Nz = 64       # 3mm resolution at 64 cells = 192mm domain
+DX = 3e-3               # 3 mm/cell (sufficient for 1 GHz: lambda/10 ≈ 30mm)
+
+# Head phantom (in cells, centre at 32,32,32)
+SCALP_R   = 28          # outer radius
+SKULL_R   = 25          # inner skull / outer brain
+CSF_R     = 23          # thin CSF layer
+BRAIN_R   = 22          # gray matter (outer)
+WM_R      = 15          # white matter (inner core)
+
+# Antenna ring
+N_TX      = 8           # transmitters (sequential)
+N_RX      = 8           # receivers (all, simultaneous)
+ANT_R     = 30          # antenna ring radius in cells
+ANT_Z     = Nz // 2     # axial plane
+
+# Waveform
+FREQ_GHz  = 1.0
+SIGMA     = 5e-10       # Gaussian pulse width
+N_STEPS   = 300
+
+# Bleed constraints
+MIN_BLEED_R_CELLS = 2
+MAX_BLEED_R_CELLS = 10
+```
+
+---
+
+### Implementation Order for Phase 9
+
+```
+Step 1: tissue_library.py    — Gabriel 1996 parameters (no simulation)
+Step 2: phantom.py           — BrainPhantom3D geometry builder
+Step 3: bleed.py             — BleedRegion sampling (with anatomical constraints)
+Step 4: antenna.py           — AntennaArray ring geometry
+Step 5: generator.py         — DatasetGenerator orchestration
+Step 6: generate_brain_dataset.py — CLI entry point
+Step 7: notebooks/waveforge_brain_dataset_generator.ipynb
+Step 8: Validate: run 10 samples, check DAS images look correct
+Step 9: Scale: run 1000 samples on Kaggle
+```
+
+---
+
+### Dataset Validation Checklist
+
+Before calling the dataset "publishable":
+
+- [ ] eps_r and sigma values match Gabriel 1996 at target frequency
+- [ ] Zero bleeds land inside skull bone (validate with coordinate check)
+- [ ] Class distribution within 5% of target (50/17/17/16)
+- [ ] DAS images show hotspot at correct bleed location for ≥90% of samples
+- [ ] Signal energy at RX is ≥20 dB above numerical noise floor
+- [ ] Phantom A and Phantom B produce different signal patterns (cross-phantom test)
+- [ ] Blood aging: fresh/subacute/chronic produce distinguishable differential signals
+
+---
+
+### Key References for Phase 9
+
+- Gabriel et al. (1996): "The dielectric properties of biological tissues"
+  Phys. Med. Biol. 41:2251 — THE reference for tissue parameters
+- Hagness et al. (1999): FDTD for breast cancer detection (microwave MIMO method)
+- Fear et al. (2002): Confocal microwave imaging for cancer detection
+- Bond et al. (2003): Microwave imaging via space-time beamforming
+
+---
+
+## CURRENT STATUS SUMMARY
+
+| Phase | Status | Key Result |
+|-------|--------|------------|
+| Phase 2: FDTD3D engine | ✅ DONE | 6-component Maxwell, torch.compile |
+| Phase 3: MurABC3D | ✅ DONE | 6-face ABC, CFL-validated |
+| Phase 4: Sources | ✅ DONE | PlaneSource, ModulatedGaussian, Chirp |
+| Phase 5: Materials3D | ✅ DONE | sphere/cylinder/box geometry |
+| Phase 6: 3D Examples | ✅ DONE | 10 examples, all validated |
+| Phase 7: Tests | ✅ DONE | 67 tests pass, 0 warnings |
+| Phase 8: Benchmarks | ✅ DONE | 567 Mcells/s at 384³ on T4 |
+| Paper | ✅ DONE | 7-page IEEE format, paper/waveforge.pdf |
+| Phase 9: Dataset Gen | 🔲 NEXT | Brain haemorrhage FDTD dataset |
