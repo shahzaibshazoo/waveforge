@@ -37,20 +37,23 @@ from core.fdtd3d import FDTD3D
 NX = NY = NZ = 64
 DX = 3e-3           # 3mm/cell — EXACT match to Kaggle dataset config
 N_STEPS = 700       # 3.96ns — covers full round trip (needed: 520 steps = 2.94ns)
-N_TX = 4
+N_TX = 16  # 16-element ring — full aperture for publication-quality localisation
 OUTPUT_DIR = Path(__file__).parent.parent / 'output'
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 CX = CY = CZ = NX // 2   # 32, 32, 32
 
-# ── Antenna positions (PointSources near grid edges, outside head) ────────────
-# Ring of 4 around the head in the z=CZ plane
-TX_POS = [
-    (3,      CY,    CZ),   # left
-    (NX-4,   CY,    CZ),   # right
-    (CX,     3,     CZ),   # front
-    (CX,     NY-4,  CZ),   # back
-]
+# ── Antenna ring: 8 elements uniformly spaced outside the head ───────────────
+# Ring radius = 30 cells from centre (90mm — just outside scalp at 78mm)
+_RING_R = 30
+TX_POS = []
+for _k in range(N_TX):
+    _ang = 2 * math.pi * _k / N_TX
+    _i = int(round(CX + _RING_R * math.cos(_ang)))
+    _j = int(round(CY + _RING_R * math.sin(_ang)))
+    _i = max(1, min(NX - 2, _i))
+    _j = max(1, min(NY - 2, _j))
+    TX_POS.append((_i, _j, CZ))
 
 # ── Tissue properties at 1 GHz (Gabriel 1996) ────────────────────────────────
 SCALP  = Material('scalp',  eps_r=40.0, sigma=0.87)
@@ -164,25 +167,68 @@ def run_mimo(Ca, Cb):
     return signals, snap, grid.dt
 
 
+def _travel_time(ax, ay, bx, by, dt):
+    """Compute one-way travel time (in samples) from (ax,ay) to (bx,by) in mm.
+
+    Uses a layered-medium model matching the phantom geometry:
+      - Air:   from antenna to scalp surface  → c = 3e8 m/s
+      - Head:  from scalp surface inward      → c = 3e8/sqrt(eps_avg) m/s
+    eps_avg blends skull(13)+brain(52) weighted by distance inside head.
+    """
+    C_AIR  = 3e8
+    C_HEAD = 3e8 / math.sqrt(35.0)   # avg eps through skull+brain path
+
+    # Head centre in mm
+    hcx = CX * DX * 1e3
+    hcy = CY * DX * 1e3
+    scalp_r_mm = HEAD_RADII['scalp'] * DX * 1e3
+
+    # Antenna position in mm
+    a = np.array([ax, ay])
+    b = np.array([bx, by])
+
+    # Distance from antenna to head surface (along the straight path)
+    # Approximate: split at the circle of radius scalp_r_mm from head centre
+    # Fraction of path inside head:
+    total_d = np.linalg.norm(b - a) + 1e-12
+    mid = (a + b) / 2.0
+    d_mid_to_centre = np.linalg.norm(mid - np.array([hcx, hcy]))
+
+    if d_mid_to_centre < scalp_r_mm:
+        # Midpoint is inside head — most of path is in head medium
+        frac_air = 0.1
+    else:
+        # Midpoint is outside head — rough linear interpolation
+        d_a = np.linalg.norm(a - np.array([hcx, hcy]))
+        d_b = np.linalg.norm(b - np.array([hcx, hcy]))
+        # Fraction of distance inside the scalp circle
+        frac_in = max(0, min(1, (scalp_r_mm * 2 - (d_a + d_b - total_d)) / total_d))
+        frac_air = 1.0 - frac_in
+
+    t = (total_d * 1e-3) * (frac_air / C_AIR + (1 - frac_air) / C_HEAD)
+    return t / dt  # travel time in samples
+
+
 def das_backprojection(scattered, dt, image_size=64):
-    """Delay-and-sum backprojection in the xy-plane at z=CZ."""
+    """Delay-and-sum with layered-medium travel time.
+
+    Each pixel gets a delay computed from: air gap (antenna→scalp) + in-head
+    segment (scalp→pixel), using effective wave speeds for each medium.
+    """
     img = np.zeros((image_size, image_size), dtype=np.float64)
-    x_px = np.linspace(0, (NX-1)*DX, image_size)
-    y_px = np.linspace(0, (NY-1)*DX, image_size)
-    ant_xy = np.array([(TX_POS[i][0]*DX, TX_POS[i][1]*DX) for i in range(N_TX)])
-    # Effective speed in brain tissue: c/sqrt(eps_r_avg)
-    # avg eps_r ≈ 45 (gray matter 52.7, white matter 38.1, CSF 68)
-    C0 = 3e8 / math.sqrt(45.0)
+    x_px = np.linspace(0, (NX - 1) * DX * 1e3, image_size)  # mm
+    y_px = np.linspace(0, (NY - 1) * DX * 1e3, image_size)
+    ant_xy_mm = [(TX_POS[i][0] * DX * 1e3, TX_POS[i][1] * DX * 1e3)
+                 for i in range(N_TX)]
 
     for iy, py in enumerate(y_px):
         for ix, px in enumerate(x_px):
-            pix = np.array([px, py])
             acc = 0.0
             for tx in range(N_TX):
-                d_tx = np.linalg.norm(pix - ant_xy[tx])
+                t_tx = _travel_time(ant_xy_mm[tx][0], ant_xy_mm[tx][1], px, py, dt)
                 for rx in range(N_TX):
-                    d_rx = np.linalg.norm(pix - ant_xy[rx])
-                    idx = int((d_tx + d_rx) / C0 / dt)
+                    t_rx = _travel_time(ant_xy_mm[rx][0], ant_xy_mm[rx][1], px, py, dt)
+                    idx = int(t_tx + t_rx)
                     if 0 <= idx < N_STEPS:
                         acc += float(scattered[tx, rx, idx])
             img[iy, ix] = acc
