@@ -137,13 +137,14 @@ def sample_random_geometry(
     skull_outer_r = scalp_outer_r - max(1, round(2.0 / dx_mm))  # ~2mm scalp
     skull_inner_r = skull_outer_r - skull_thick_cells
 
-    # Epidural space: 2–5 mm
-    epidural_mm = rng.uniform(2.0, 5.0)
-    dura_inner_r = skull_inner_r - max(1, round(epidural_mm / dx_mm))
+    # Epidural space: minimum 3 cells (9mm) so small bleeds always fit.
+    # Physiologically 5–20mm for clinically relevant haematomas.
+    epidural_cells = rng.randint(3, 6)
+    dura_inner_r = skull_inner_r - epidural_cells
 
-    # Subdural/CSF space: 3–8 mm
-    csf_mm = rng.uniform(3.0, 8.0)
-    csf_inner_r = dura_inner_r - max(1, round(csf_mm / dx_mm))
+    # Subdural/CSF space: minimum 3 cells (9mm) for same reason
+    csf_cells = rng.randint(3, 6)
+    csf_inner_r = dura_inner_r - csf_cells
 
     # Gray matter = brain surface (csf_inner_r)
     gray_matter_r = csf_inner_r
@@ -152,12 +153,17 @@ def sample_random_geometry(
     wm_fraction = rng.uniform(0.60, 0.75)
     white_matter_r = max(4, round(gray_matter_r * wm_fraction))
 
-    # Sanity: enforce minimum shell thicknesses
-    if skull_inner_r < 4: skull_inner_r = 4
-    if dura_inner_r < skull_inner_r - 5: dura_inner_r = skull_inner_r - 1
-    if csf_inner_r < 4: csf_inner_r = 4
-    if csf_inner_r >= dura_inner_r: csf_inner_r = dura_inner_r - 1
-    if white_matter_r >= csf_inner_r: white_matter_r = max(3, csf_inner_r - 2)
+    # Sanity: enforce minimum values and ordering (all must be > 0 and decreasing)
+    skull_inner_r = max(skull_inner_r, 6)
+    # Enforce minimum epidural zone of 3 cells (so small bleeds always fit)
+    dura_inner_r  = min(dura_inner_r, skull_inner_r - 3)
+    dura_inner_r  = max(dura_inner_r, 4)
+    # Enforce minimum subdural zone of 3 cells
+    csf_inner_r   = min(csf_inner_r, dura_inner_r - 3)
+    csf_inner_r   = max(csf_inner_r, 4)
+    gray_matter_r = csf_inner_r
+    if white_matter_r >= gray_matter_r:
+        white_matter_r = max(3, gray_matter_r - 2)
 
     return PhantomGeometry(
         center=(cx, cy, cz),
