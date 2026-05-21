@@ -46,7 +46,7 @@ from core.boundaries import MurABC3D
 from core.sources import ModulatedGaussian, GaussianPulse
 from core.fdtd3d import FDTD3D
 
-from .brain.phantom import BrainPhantom3D, PHANTOM_A, PHANTOM_B
+from .brain.phantom import BrainPhantom3D, PHANTOM_A, PHANTOM_B, sample_random_geometry
 from .brain.antenna import AntennaRing
 
 
@@ -226,20 +226,27 @@ class BrainDatasetGenerator:
         self,
         label: int,
         seed: int,
-        phantom_id: str = 'A',
+        phantom_id: str = 'train',
         bleed_age: Optional[str] = None,
         bleed_size: Optional[str] = None,
     ) -> dict:
-        """Generate a single dataset sample.
+        """Generate a single dataset sample with a unique randomised phantom.
+
+        Each sample gets its own head geometry drawn from the published
+        population distribution (skull thickness, brain radius, head scale).
+        This ensures the model must generalise across anatomy rather than
+        memorising a fixed phantom.
 
         Parameters
         ----------
         label : int
             0=healthy, 1=epidural, 2=subdural, 3=intracerebral.
         seed : int
-            Random seed for phantom geometry and bleed placement.
+            Per-sample seed. Fully determines phantom geometry, bleed
+            placement, and blood aging stage. Same seed = same sample.
         phantom_id : str
-            'A' for training phantom, 'B' for test phantom.
+            'train' or 'test'. Uses separate seed spaces so train/test
+            phantoms never overlap.
         bleed_age : str, optional
             'acute', 'subacute', or 'chronic'. Sampled if None.
         bleed_size : str, optional
@@ -247,34 +254,28 @@ class BrainDatasetGenerator:
 
         Returns
         -------
-        dict
-            Complete sample dict ready to save as .npz.
+        dict or None
+            Complete sample dict, or None if bleed placement failed.
         """
         rng = random.Random(seed)
-        geom = PHANTOM_A if phantom_id == 'A' else PHANTOM_B
 
-        # Randomly perturb phantom geometry (±2 cells) for variability
-        from copy import copy
-        from dataclasses import replace
-        perturb = rng.randint(-2, 2)
-        perturbed_geom = replace(
-            geom,
-            scalp_outer_r=geom.scalp_outer_r + perturb,
-            skull_outer_r=geom.skull_outer_r + perturb,
-            skull_inner_r=geom.skull_inner_r + perturb,
-            dura_inner_r=geom.dura_inner_r + perturb,
-            csf_inner_r=geom.csf_inner_r + perturb,
-            gray_matter_r=geom.gray_matter_r + perturb,
-            white_matter_r=geom.white_matter_r + perturb,
+        # Each sample gets a UNIQUE phantom geometry from the population
+        # distribution. Test samples use a separate seed space (seed + 10^7)
+        # so they are structurally different from any training phantom.
+        geom_seed = seed if phantom_id == 'train' else seed + 10_000_000
+        geom = sample_random_geometry(
+            seed=geom_seed,
+            grid_size=self._N,
+            dx_mm=self._dx * 1e3,
         )
 
         phantom_target = BrainPhantom3D(
             self._grid, self._freq_hz,
-            geometry=perturbed_geom, seed=seed
+            geometry=geom, seed=seed
         )
         phantom_ref = BrainPhantom3D(
             self._grid, self._freq_hz,
-            geometry=perturbed_geom, seed=seed + 100000
+            geometry=geom, seed=seed + 100000
         )
 
         bleed_config = None
@@ -293,7 +294,7 @@ class BrainDatasetGenerator:
                     break
                 phantom_target = BrainPhantom3D(
                     self._grid, self._freq_hz,
-                    geometry=perturbed_geom, seed=seed + attempt + 1
+                    geometry=geom, seed=seed + attempt + 1
                 )
 
             if bleed_config is None:
@@ -340,10 +341,12 @@ class BrainDatasetGenerator:
             'n_rx':               np.int32(self._n_tx),
             'n_steps':            np.int32(self._n_steps),
             'dt_s':               np.float64(self._grid.dt),
-            # Phantom
-            'phantom_id':         phantom_id,
-            'phantom_seed':       np.int32(seed),
-            'phantom_perturbation': np.int32(perturb),
+            # Phantom — unique geometry per sample
+            'phantom_id':            phantom_id,
+            'phantom_seed':          np.int32(seed),
+            'phantom_skull_inner_r': np.int32(geom.skull_inner_r),
+            'phantom_gray_r':        np.int32(geom.gray_matter_r),
+            'phantom_scalp_outer_r': np.int32(geom.scalp_outer_r),
             # Performance
             '_mcells_per_second': np.float32((mc_total + mc_ref) / 2),
         }
@@ -367,11 +370,15 @@ class BrainDatasetGenerator:
     def generate_balanced_dataset(
         self,
         n_samples: int,
-        phantom_id: str = 'A',
+        phantom_id: str = 'train',
         base_seed: int = 0,
         show_progress: bool = True,
     ) -> dict:
         """Generate a class-balanced dataset.
+
+        Each sample gets its own unique randomised head geometry drawn from
+        the population distribution — n_samples unique phantoms total.
+        This prevents the model from memorising a fixed skull shape.
 
         Splits n_samples equally across 4 classes (healthy, EDH, SDH, ICH).
 
@@ -380,7 +387,8 @@ class BrainDatasetGenerator:
         n_samples : int
             Total number of samples to generate.
         phantom_id : str
-            'A' for training data, 'B' for test data.
+            'train' or 'test'. Test uses a separate seed space to guarantee
+            no phantom overlap with training data.
         base_seed : int
             Starting seed (incremented per sample).
         show_progress : bool

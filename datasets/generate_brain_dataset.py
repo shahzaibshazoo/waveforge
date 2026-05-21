@@ -170,7 +170,7 @@ def main():
     t0 = time.time()
     manifest = gen.generate_balanced_dataset(
         n_samples=args.n_samples,
-        phantom_id=args.phantom,
+        phantom_id='train' if args.phantom == 'A' else 'test',
         base_seed=args.base_seed,
         show_progress=not args.quiet,
     )
