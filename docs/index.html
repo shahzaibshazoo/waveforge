@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   <!-- Primary SEO -->
-  <title>WaveForge — GPU-Native FDTD Electromagnetic Simulation | 21.8× Faster than Meep</title>
-  <meta name="description" content="Open-source GPU-accelerated FDTD solver for EM wave simulation, microwave brain tumor imaging, breast cancer detection, EV radar, and through-wall sensing. 21.8× faster than Meep on Tesla T4."/>
+  <title>WaveForge — GPU-Native 2D/3D FDTD Electromagnetic Simulation | 567 Mcells/s on T4</title>
+  <meta name="description" content="Open-source GPU-accelerated FDTD solver for 2D and 3D EM simulation. 567 Mcells/s on Tesla T4 (3D). Medical microwave imaging, EV radar, through-wall sensing. 10 ready-to-run 3D examples."/>
   <meta name="keywords" content="FDTD simulation, GPU electromagnetic, Maxwell equations, brain tumor detection, microwave imaging, PyTorch FDTD, MIMO radar, inverse scattering, meep alternative, CUDA electromagnetics"/>
   <meta name="author" content="Shahzaib Ur Rehman"/>
   <meta name="robots" content="index, follow"/>
@@ -14,16 +14,16 @@
 
   <!-- OpenGraph -->
   <meta property="og:type" content="website"/>
-  <meta property="og:title" content="WaveForge — GPU-Native FDTD Electromagnetic Simulation | 21.8× Faster than Meep"/>
-  <meta property="og:description" content="Open-source GPU-accelerated FDTD solver for EM wave simulation, microwave brain tumor imaging, breast cancer detection, EV radar, and through-wall sensing. 21.8× faster than Meep on Tesla T4."/>
+  <meta property="og:title" content="WaveForge — GPU-Native 2D/3D FDTD Electromagnetic Simulation | 567 Mcells/s on T4"/>
+  <meta property="og:description" content="Open-source GPU-accelerated FDTD solver for 2D and 3D EM simulation. 567 Mcells/s on Tesla T4 (3D). Medical microwave imaging, EV radar, through-wall sensing."/>
   <meta property="og:image" content="https://shahzaibshazoo.github.io/waveforge/assets/benchmark_comparison.png"/>
   <meta property="og:url" content="https://shahzaibshazoo.github.io/waveforge"/>
   <meta property="og:site_name" content="WaveForge"/>
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="WaveForge — GPU-Native FDTD Electromagnetic Simulation | 21.8× Faster than Meep"/>
-  <meta name="twitter:description" content="Open-source GPU-accelerated FDTD solver for EM wave simulation, microwave brain tumor imaging, breast cancer detection, EV radar, and through-wall sensing. 21.8× faster than Meep on Tesla T4."/>
+  <meta name="twitter:title" content="WaveForge — GPU-Native 2D/3D FDTD Electromagnetic Simulation | 567 Mcells/s on T4"/>
+  <meta name="twitter:description" content="Open-source GPU-accelerated FDTD solver for 2D and 3D EM simulation. 567 Mcells/s on Tesla T4 (3D). 10 ready-to-run 3D physics examples."/>
   <meta name="twitter:image" content="https://shahzaibshazoo.github.io/waveforge/assets/benchmark_comparison.png"/>
 
   <!-- Schema.org JSON-LD -->
@@ -130,23 +130,23 @@
 
     <div class="hero-stats" role="list" aria-label="Key metrics">
       <div class="stat" role="listitem">
-        <span class="stat-num" data-count="21.8" data-suffix="&times;">0&times;</span>
-        <span class="stat-label">faster than Meep</span>
+        <span class="stat-num" data-count="567" data-suffix="">0</span>
+        <span class="stat-label">Mcells/s — 3D GPU (T4)</span>
       </div>
       <div class="stat-div" aria-hidden="true"></div>
       <div class="stat" role="listitem">
-        <span class="stat-num" data-count="350" data-suffix="">0</span>
-        <span class="stat-label">Mcells/s on T4</span>
+        <span class="stat-num" data-count="22" data-suffix="&times;">0&times;</span>
+        <span class="stat-label">faster than CPU (3D)</span>
       </div>
       <div class="stat-div" aria-hidden="true"></div>
       <div class="stat" role="listitem">
-        <span class="stat-num" data-count="21" data-suffix="">0</span>
+        <span class="stat-num" data-count="67" data-suffix="">0</span>
         <span class="stat-label">tests pass</span>
       </div>
       <div class="stat-div" aria-hidden="true"></div>
       <div class="stat" role="listitem">
-        <span class="stat-num" data-count="10" data-suffix="">0</span>
-        <span class="stat-label">simulations</span>
+        <span class="stat-num" data-count="20" data-suffix="">0</span>
+        <span class="stat-label">2D + 3D examples</span>
       </div>
     </div>
   </div>
@@ -228,12 +228,12 @@
           </tr>
           <tr>
             <td>512&sup2; throughput</td>
-            <td class="col-wf highlight">350 Mcells/s (GPU)</td>
+            <td class="col-wf highlight">567 Mcells/s — 3D GPU (T4)</td>
             <td class="col-meep">16 Mcells/s (CPU)</td>
           </tr>
           <tr>
-            <td>512&sup2; speedup</td>
-            <td class="col-wf highlight">21.8&times; faster</td>
+            <td>3D speedup (384³)</td>
+            <td class="col-wf highlight">22&times; faster vs CPU</td>
             <td class="col-meep">baseline</td>
           </tr>
           <tr>
@@ -287,61 +287,75 @@
     <div class="section-header">
       <p class="section-eyebrow">PERFORMANCE</p>
       <h2 id="benchmarks-heading">Measured on Real Hardware</h2>
-      <p class="section-sub">Tesla T4 GPU (Google Colab free tier) vs 4-core laptop CPU</p>
+      <p class="section-sub">Tesla T4 GPU (Google Colab / Kaggle) vs CPU — 2D and 3D</p>
     </div>
 
+    <!-- 3D benchmark plots -->
     <div class="bench-grid">
       <figure class="bench-card">
         <img
-          src="assets/benchmark_comparison.png"
-          alt="Bar chart comparing WaveForge GPU throughput vs Meep CPU throughput in Mcells/s across grid sizes 64x64, 128x128, 256x256, and 512x512"
+          src="assets/benchmark_3d_scaling.png"
+          alt="Line chart showing WaveForge 3D throughput scaling from 19.7 Mcells/s at 32³ to 567 Mcells/s at 384³ on Tesla T4, compared to CPU and PyMEEP CPU baselines"
           loading="lazy"
           width="800"
           height="480"
         />
-        <figcaption>Throughput (Mcells/s) and GPU speedup across four grid sizes on Tesla T4</figcaption>
+        <figcaption>3D grid scaling (N³): WaveForge GPU peaks at <strong>567 Mcells/s</strong> at 384³, plateauing at the T4 memory-bandwidth ceiling</figcaption>
       </figure>
       <figure class="bench-card">
         <img
-          src="assets/speedup_scaling.png"
-          alt="Line chart showing WaveForge GPU speedup over Meep scaling from 0.2x at 64x64 to 21.8x at 512x512 grid size"
+          src="assets/benchmark_3d_examples.png"
+          alt="Bar chart comparing CPU vs Tesla T4 GPU throughput for all 10 3D physics examples including waveguide, scattering sphere, through-wall radar, EV radar ULA, and brain clot detection"
           loading="lazy"
           width="800"
           height="480"
         />
-        <figcaption>GPU speedup vs Meep scales with grid size — peaks at 21.8&times; at 512&sup2;</figcaption>
+        <figcaption>All 10 3D examples on Tesla T4 — GPU speedup from 5× to 22× over CPU</figcaption>
       </figure>
     </div>
 
-    <div class="bench-numbers" role="list" aria-label="Speedup milestones">
-      <div class="bench-num slow" role="listitem">
-        <span data-count="0.2" data-suffix="&times;">0.2&times;</span>
-        <small>64&sup2; — GPU launch overhead</small>
-      </div>
-      <div class="bench-num neutral" role="listitem">
-        <span data-count="1.0" data-suffix="&times;">1.0&times;</span>
-        <small>128&sup2; — crossover point</small>
+    <div class="bench-numbers" role="list" aria-label="3D GPU speedup milestones">
+      <div class="bench-num good" role="listitem">
+        <span data-count="150" data-suffix="">150</span>
+        <small>Mcells/s at 64³</small>
       </div>
       <div class="bench-num good" role="listitem">
-        <span data-count="6.0" data-suffix="&times;">6.0&times;</span>
-        <small>256&sup2; — GPU wins</small>
+        <span data-count="542" data-suffix="">542</span>
+        <small>Mcells/s at 128³</small>
       </div>
       <div class="bench-num best" role="listitem">
-        <span data-count="21.8" data-suffix="&times;">21.8&times;</span>
-        <small>512&sup2; — GPU dominates</small>
+        <span data-count="567" data-suffix="">567</span>
+        <small>Mcells/s peak at 384³</small>
+      </div>
+      <div class="bench-num best" role="listitem">
+        <span data-count="22" data-suffix="&times;">22&times;</span>
+        <small>max speedup vs CPU (3D)</small>
       </div>
     </div>
 
-    <figure class="bench-card bench-card-full">
-      <img
-        src="assets/simulations/meep_comparison.png"
-        alt="Side-by-side field snapshots comparing WaveForge GPU output to Meep CPU output across seven simulation scenarios including waveguide, scattering, and tissue penetration"
-        loading="lazy"
-        width="1200"
-        height="600"
-      />
-      <figcaption>Visual field comparison across all 7 simulation types — WaveForge vs Meep</figcaption>
-    </figure>
+    <!-- 2D reference comparison -->
+    <div class="bench-grid" style="margin-top:2rem">
+      <figure class="bench-card">
+        <img
+          src="assets/benchmark_comparison.png"
+          alt="Bar chart comparing WaveForge 2D GPU throughput vs PyMEEP CPU throughput across grid sizes 64x64 to 512x512 on Tesla T4"
+          loading="lazy"
+          width="800"
+          height="480"
+        />
+        <figcaption>2D reference: WaveForge GPU vs PyMEEP CPU — up to 21.8× at 512²</figcaption>
+      </figure>
+      <figure class="bench-card">
+        <img
+          src="assets/simulations/meep_comparison.png"
+          alt="Side-by-side field snapshots comparing WaveForge GPU output to Meep CPU output across seven 2D simulation scenarios"
+          loading="lazy"
+          width="800"
+          height="480"
+        />
+        <figcaption>Visual field comparison — WaveForge vs Meep across 7 scene types</figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -350,8 +364,8 @@
   <div class="container">
     <div class="section-header">
       <p class="section-eyebrow">GALLERY</p>
-      <h2 id="simulations-heading">10 Ready-to-Run Scenarios</h2>
-      <p class="section-sub">From basic Fresnel reflection to full MIMO brain tumor imaging</p>
+      <h2 id="simulations-heading">20 Ready-to-Run Scenarios</h2>
+      <p class="section-sub">10 fully-validated 2D examples + 10 new 3D examples — from basic Fresnel reflection to full MIMO brain tumor imaging</p>
     </div>
     <div class="gallery-grid">
 
@@ -588,7 +602,7 @@ sim      = FDTD2D(grid, fields, boundary, SourceCollection([src]))
 sim.run(1000, verbose=True)
 
 print(f<span class="s">"Throughput: {sim.mcells_per_second:.0f} Mcells/s"</span>)
-<span class="c"># -&gt; ~350 Mcells/s on Tesla T4</span></code></pre>
+<span class="c"># -&gt; ~567 Mcells/s (3D) on Tesla T4</span></code></pre>
       </div>
     </div>
 
@@ -703,10 +717,10 @@ sim = FDTD2D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb)</code></pre>
         <p>Adjoint method for inverse design, full PyTorch autograd integration</p>
       </div>
 
-      <div class="roadmap-item rm-future">
-        <span class="rm-badge rm-badge-future">Future</span>
+      <div class="roadmap-item rm-done">
+        <span class="rm-badge rm-badge-done">Shipped</span>
         <h4>3D Extension</h4>
-        <p>Full 3D Yee grid with Ez/Hy/Hx fields, volumetric imaging, multi-GPU via NCCL</p>
+        <p>Full 6-component 3D Yee grid (Ex,Ey,Ez,Hx,Hy,Hz), MurABC3D, MaterialMap3D, 10 physics examples. 567 Mcells/s on Tesla T4.</p>
       </div>
 
       <div class="roadmap-item rm-future">
