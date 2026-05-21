@@ -20,6 +20,8 @@ ModulatedGaussian
     Carrier-modulated Gaussian envelope waveform.
 Chirp
     Hann-windowed linear frequency-sweep waveform.
+UWBPulse
+    Ultra-wideband Gaussian monocycle: specify f_low and f_high in Hz.
 PlaneSource
     Full-plane soft source injector (xy, xz, or yz plane).
 PointSource
@@ -541,6 +543,123 @@ class Chirp(Waveform):
     @property
     def amplitude(self) -> float:
         """Peak signed amplitude A."""
+        return self._amplitude
+
+
+# ---------------------------------------------------------------------------
+# UWBPulse
+# ---------------------------------------------------------------------------
+
+
+class UWBPulse(Waveform):
+    """Band-limited Gaussian derivative pulse for ultra-wideband (UWB) simulation.
+
+    Produces a pulse whose spectral energy is concentrated between *f_low* and
+    *f_high*.  The centre frequency is ``fc = (f_low + f_high) / 2`` and the
+    Gaussian sigma is chosen so that the −10 dB bandwidth equals the requested
+    band.  Tissue Cole-Cole properties should be evaluated at *fc*.
+
+    Mathematically this is a first-derivative Gaussian (Gaussian monocycle):
+
+        f(t) = -A * (t - t0) / sigma^2 * exp(-(t-t0)^2 / (2*sigma^2))
+
+    which has a spectral peak at fc = 1 / (2*pi*sigma).
+
+    Parameters
+    ----------
+    amplitude : float
+        Peak amplitude.  Must be non-zero.
+    f_low : float
+        Lower -10 dB frequency in Hz.  Must be > 0.
+    f_high : float
+        Upper -10 dB frequency in Hz.  Must be > f_low.
+    t0 : float | None
+        Pulse centre time in seconds.  Defaults to 5*sigma (causal).
+
+    Examples
+    --------
+    UWB brain imaging at 3–10 GHz:
+        pulse = UWBPulse(amplitude=1.0, f_low=3e9, f_high=10e9)
+
+    FCC UWB band (3.1–10.6 GHz):
+        pulse = UWBPulse(amplitude=1.0, f_low=3.1e9, f_high=10.6e9)
+
+    Raises
+    ------
+    ValueError
+        If amplitude == 0, f_low <= 0, or f_high <= f_low.
+    """
+
+    def __init__(
+        self,
+        amplitude: float = 1.0,
+        f_low: float = 1e9,
+        f_high: float = 3e9,
+        t0: float | None = None,
+    ) -> None:
+        if amplitude == 0:
+            raise ValueError("amplitude must be non-zero.")
+        if f_low <= 0:
+            raise ValueError(f"f_low must be > 0, got {f_low!r}")
+        if f_high <= f_low:
+            raise ValueError(f"f_high must be > f_low, got f_low={f_low!r}, f_high={f_high!r}")
+
+        self._amplitude = float(amplitude)
+        self._f_low = float(f_low)
+        self._f_high = float(f_high)
+        self._fc = (f_low + f_high) / 2.0
+        # For Gaussian monocycle -(t/σ²) exp(-t²/2σ²):
+        #   spectral peak at f_peak = 1/(sqrt(2)*pi*σ)  → σ = 1/(sqrt(2)*pi*fc)
+        #   actual amplitude peak = amplitude / (σ * sqrt(e))
+        #   normalization: multiply by σ*sqrt(e) so peak == amplitude
+        self._sigma = 1.0 / (math.sqrt(2.0) * math.pi * self._fc)
+        self._norm = self._sigma * math.sqrt(math.e)   # re-normalise to peak = amplitude
+        self._t0 = float(t0) if t0 is not None else 6.0 * self._sigma
+
+        if not self.is_causal(0.0):
+            warnings.warn(
+                f"UWBPulse: |f(0)|/|A| >= 1e-4 — waveform may not be causal. "
+                f"Consider increasing t0 (currently {self._t0:.4g} s) to >= "
+                f"5*sigma ({5.0 * self._sigma:.4g} s).",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    def _compute(self, t: torch.Tensor) -> torch.Tensor:
+        tau = t - self._t0
+        g = torch.exp(-(tau**2) / (2.0 * self._sigma**2))
+        # Raw monocycle, then normalize so peak == amplitude
+        raw = -(tau / self._sigma**2) * g
+        return self._amplitude * self._norm * raw
+
+    @property
+    def fc(self) -> float:
+        """Centre frequency (f_low + f_high) / 2 in Hz."""
+        return self._fc
+
+    @property
+    def f_low(self) -> float:
+        """Lower -10 dB frequency in Hz."""
+        return self._f_low
+
+    @property
+    def f_high(self) -> float:
+        """Upper -10 dB frequency in Hz."""
+        return self._f_high
+
+    @property
+    def peak_time(self) -> float:
+        """Pulse centre time t0."""
+        return self._t0
+
+    @property
+    def bandwidth(self) -> float:
+        """Pulse bandwidth f_high - f_low in Hz."""
+        return self._f_high - self._f_low
+
+    @property
+    def amplitude(self) -> float:
+        """Peak amplitude magnitude."""
         return self._amplitude
 
 

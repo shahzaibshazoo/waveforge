@@ -167,71 +167,132 @@ def run_mimo(Ca, Cb):
     return signals, snap, grid.dt
 
 
-def _travel_time(ax, ay, bx, by, dt):
-    """Compute one-way travel time (in samples) from (ax,ay) to (bx,by) in mm.
+def _ray_sphere_chord(ax, ay, bx, by, cx, cy, r):
+    """Length of the chord that segment (a→b) cuts through a circle of radius r.
 
-    Uses a layered-medium model matching the phantom geometry:
-      - Air:   from antenna to scalp surface  → c = 3e8 m/s
-      - Head:  from scalp surface inward      → c = 3e8/sqrt(eps_avg) m/s
-    eps_avg blends skull(13)+brain(52) weighted by distance inside head.
+    Uses analytic ray-sphere intersection. Returns 0 if the segment does not
+    intersect the circle. All coordinates in the same unit (mm).
     """
-    C_AIR  = 3e8
-    C_HEAD = 3e8 / math.sqrt(35.0)   # avg eps through skull+brain path
+    dx_ = bx - ax
+    dy_ = by - ay
+    seg_len = math.sqrt(dx_**2 + dy_**2) + 1e-30
 
-    # Head centre in mm
-    hcx = CX * DX * 1e3
-    hcy = CY * DX * 1e3
-    scalp_r_mm = HEAD_RADII['scalp'] * DX * 1e3
+    # Normalise direction
+    ux, uy = dx_ / seg_len, dy_ / seg_len
 
-    # Antenna position in mm
-    a = np.array([ax, ay])
-    b = np.array([bx, by])
+    # Vector from circle centre to ray origin
+    ox, oy = ax - cx, ay - cy
 
-    # Distance from antenna to head surface (along the straight path)
-    # Approximate: split at the circle of radius scalp_r_mm from head centre
-    # Fraction of path inside head:
-    total_d = np.linalg.norm(b - a) + 1e-12
-    mid = (a + b) / 2.0
-    d_mid_to_centre = np.linalg.norm(mid - np.array([hcx, hcy]))
+    # Quadratic: |o + t*u|^2 = r^2 → t^2 + 2(o·u)t + (|o|^2 - r^2) = 0
+    b_coef = ox * ux + oy * uy
+    c_coef = ox**2 + oy**2 - r**2
+    disc = b_coef**2 - c_coef
 
-    if d_mid_to_centre < scalp_r_mm:
-        # Midpoint is inside head — most of path is in head medium
-        frac_air = 0.1
-    else:
-        # Midpoint is outside head — rough linear interpolation
-        d_a = np.linalg.norm(a - np.array([hcx, hcy]))
-        d_b = np.linalg.norm(b - np.array([hcx, hcy]))
-        # Fraction of distance inside the scalp circle
-        frac_in = max(0, min(1, (scalp_r_mm * 2 - (d_a + d_b - total_d)) / total_d))
-        frac_air = 1.0 - frac_in
+    if disc <= 0:
+        return 0.0  # ray misses circle
 
-    t = (total_d * 1e-3) * (frac_air / C_AIR + (1 - frac_air) / C_HEAD)
-    return t / dt  # travel time in samples
+    sq = math.sqrt(disc)
+    t0 = -b_coef - sq
+    t1 = -b_coef + sq
+
+    # Clamp to segment [0, seg_len]
+    t0 = max(0.0, min(seg_len, t0))
+    t1 = max(0.0, min(seg_len, t1))
+    return max(0.0, t1 - t0)
+
+
+# Layered-medium speed model: tissue eps_r at 1 GHz (Gabriel 1996)
+_C0 = 3e8
+_EPS_LAYERS = [
+    # (radius_cells, eps_r)  — outermost to innermost
+    (HEAD_RADII['scalp'],  40.0),   # scalp
+    (HEAD_RADII['skull'],  13.1),   # skull
+    (HEAD_RADII['dura'],   44.0),   # dura
+    (HEAD_RADII['csf'],    68.0),   # CSF
+    (HEAD_RADII['gm'],     52.7),   # gray matter
+    (HEAD_RADII['wm'],     38.1),   # white matter
+]
+
+
+def _travel_time(ax, ay, bx, by, dt):
+    """One-way travel time (samples) from (ax,ay) to (bx,by) in mm.
+
+    Uses analytic ray-sphere intersection to compute the exact chord length
+    through each concentric tissue shell, then integrates path/speed for each
+    segment. This replaces the broken midpoint heuristic.
+    """
+    hcx = CX * DX * 1e3   # head centre x (mm)
+    hcy = CY * DX * 1e3   # head centre y (mm)
+
+    total_d_mm = math.sqrt((bx - ax)**2 + (by - ay)**2) + 1e-30
+
+    # Chord through each shell (annulus = outer_sphere - inner_sphere chord)
+    # Process shells from outermost inward
+    prev_chord = 0.0
+    t_total = 0.0
+
+    for idx, (r_cells, eps) in enumerate(_EPS_LAYERS):
+        r_mm = r_cells * DX * 1e3
+        chord_outer = _ray_sphere_chord(ax, ay, bx, by, hcx, hcy, r_mm)
+
+        if idx + 1 < len(_EPS_LAYERS):
+            r_inner_mm = _EPS_LAYERS[idx + 1][0] * DX * 1e3
+            chord_inner = _ray_sphere_chord(ax, ay, bx, by, hcx, hcy, r_inner_mm)
+        else:
+            chord_inner = 0.0  # innermost sphere has no inner boundary
+
+        # Chord through this shell = chord through outer - chord through inner
+        shell_chord = max(0.0, chord_outer - chord_inner)
+        c_tissue = _C0 / math.sqrt(eps)
+        t_total += (shell_chord * 1e-3) / c_tissue
+        prev_chord += shell_chord
+
+    # Remainder of the path is in air
+    air_d_mm = max(0.0, total_d_mm - prev_chord)
+    t_total += (air_d_mm * 1e-3) / _C0
+
+    return t_total / dt  # convert to samples
 
 
 def das_backprojection(scattered, dt, image_size=64):
-    """Delay-and-sum with layered-medium travel time.
+    """Delay-and-sum with analytic layered-medium travel time.
 
-    Each pixel gets a delay computed from: air gap (antenna→scalp) + in-head
-    segment (scalp→pixel), using effective wave speeds for each medium.
+    Pre-computes a travel-time lookup table for all (antenna, pixel) pairs,
+    then accumulates envelope-detected signal power at each pixel.
+    The Hilbert envelope removes sign dependency so coherent cancellation
+    does not hide true bleeds.
+    Accumulation is vectorized over pixel dimensions for speed.
     """
-    img = np.zeros((image_size, image_size), dtype=np.float64)
-    x_px = np.linspace(0, (NX - 1) * DX * 1e3, image_size)  # mm
+    from scipy.signal import hilbert
+
+    x_px = np.linspace(0, (NX - 1) * DX * 1e3, image_size)   # mm
     y_px = np.linspace(0, (NY - 1) * DX * 1e3, image_size)
     ant_xy_mm = [(TX_POS[i][0] * DX * 1e3, TX_POS[i][1] * DX * 1e3)
                  for i in range(N_TX)]
 
-    for iy, py in enumerate(y_px):
-        for ix, px in enumerate(x_px):
-            acc = 0.0
-            for tx in range(N_TX):
-                t_tx = _travel_time(ant_xy_mm[tx][0], ant_xy_mm[tx][1], px, py, dt)
-                for rx in range(N_TX):
-                    t_rx = _travel_time(ant_xy_mm[rx][0], ant_xy_mm[rx][1], px, py, dt)
-                    idx = int(t_tx + t_rx)
-                    if 0 <= idx < N_STEPS:
-                        acc += float(scattered[tx, rx, idx])
-            img[iy, ix] = acc
+    # Envelope (magnitude of analytic signal) for each TX-RX channel
+    # shape: (N_TX, N_TX, N_STEPS)
+    env = np.abs(hilbert(scattered, axis=-1)).astype(np.float32)
+
+    # Pre-compute travel-time table in samples: shape (N_TX, image_size, image_size)
+    tt = np.zeros((N_TX, image_size, image_size), dtype=np.float32)
+    for ant_idx in range(N_TX):
+        ax, ay = ant_xy_mm[ant_idx]
+        for iy, py in enumerate(y_px):
+            for ix, px in enumerate(x_px):
+                tt[ant_idx, iy, ix] = _travel_time(ax, ay, px, py, dt)
+
+    # Vectorized DAS accumulation over (image_size, image_size) per TX-RX pair
+    img = np.zeros((image_size, image_size), dtype=np.float64)
+    for tx in range(N_TX):
+        for rx in range(N_TX):
+            # delay_map: shape (image_size, image_size) — round to nearest sample
+            delay_map = np.rint(tt[tx] + tt[rx]).astype(np.int32)
+            valid = (delay_map >= 0) & (delay_map < N_STEPS)
+            delay_map = np.clip(delay_map, 0, N_STEPS - 1)
+            # Gather envelope at the round-trip delay for each pixel
+            gathered = env[tx, rx][delay_map]   # shape (image_size, image_size)
+            img += np.where(valid, gathered, 0.0)
 
     return (img ** 2).astype(np.float32)
 

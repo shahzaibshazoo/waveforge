@@ -76,9 +76,13 @@ def parse_args():
     p.add_argument('--base_seed', type=int, default=0,
                    help='Base random seed for reproducibility')
 
-    # Physics
+    # Physics — narrow-band or UWB
     p.add_argument('--freq_ghz', type=float, default=1.0,
-                   help='Centre frequency in GHz (Cole-Cole computed at this freq)')
+                   help='Centre frequency in GHz (used in narrow-band mode)')
+    p.add_argument('--freq_low_ghz', type=float, default=None,
+                   help='UWB lower frequency in GHz (enables UWB mode when set with --freq_high_ghz)')
+    p.add_argument('--freq_high_ghz', type=float, default=None,
+                   help='UWB upper frequency in GHz (e.g. --freq_low_ghz 3 --freq_high_ghz 10)')
 
     # Grid
     p.add_argument('--grid_size', type=int, default=64,
@@ -116,13 +120,27 @@ def main():
     else:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+    # Determine frequency mode
+    uwb_mode = args.freq_low_ghz is not None and args.freq_high_ghz is not None
+    if uwb_mode:
+        freq_low  = args.freq_low_ghz  * 1e9
+        freq_high = args.freq_high_ghz * 1e9
+        freq_centre = (freq_low + freq_high) / 2.0
+    else:
+        freq_low = freq_high = None
+        freq_centre = args.freq_ghz * 1e9
+
     # Print configuration
     print('=' * 60)
     print('WaveForge Brain Haemorrhage Dataset Generator')
     print('=' * 60)
     print(f'  Samples:    {args.n_samples}')
     print(f'  Phantom:    {args.phantom} ({"training" if args.phantom == "A" else "test/independent"})')
-    print(f'  Frequency:  {args.freq_ghz:.2f} GHz')
+    if uwb_mode:
+        print(f'  Mode:       UWB  {args.freq_low_ghz:.2f}–{args.freq_high_ghz:.2f} GHz')
+        print(f'  Tissue fc:  {freq_centre/1e9:.2f} GHz (Cole-Cole evaluated at centre freq)')
+    else:
+        print(f'  Frequency:  {args.freq_ghz:.2f} GHz')
     print(f'  Grid:       {args.grid_size}³ cells, dx={args.dx_mm}mm')
     print(f'  Domain:     {args.grid_size * args.dx_mm:.0f}mm cube')
     print(f'  Antennas:   {args.n_tx} elements, r={args.ring_radius} cells')
@@ -132,7 +150,6 @@ def main():
     print(f'  Base seed:  {args.base_seed}')
 
     # Estimate runtime
-    # ~30s/sample for 64³ on T4, ~3s on CPU per step is too slow
     if device == 'cuda':
         est_s_per_sample = args.n_tx * args.n_steps * args.grid_size**3 / 567e6 * 2
     else:
@@ -156,7 +173,9 @@ def main():
     # Build generator
     gen = BrainDatasetGenerator(
         output_dir=args.output_dir,
-        freq_hz=args.freq_ghz * 1e9,
+        freq_hz=freq_centre,
+        freq_low_hz=freq_low,
+        freq_high_hz=freq_high,
         grid_size=args.grid_size,
         dx_mm=args.dx_mm,
         n_tx=args.n_tx,

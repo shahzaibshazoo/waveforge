@@ -43,7 +43,7 @@ import torch
 from core.grid import YeeGrid
 from core.fields import FieldSet
 from core.boundaries import MurABC3D
-from core.sources import ModulatedGaussian, GaussianPulse
+from core.sources import ModulatedGaussian, GaussianPulse, UWBPulse
 from core.fdtd3d import FDTD3D
 
 from .brain.phantom import BrainPhantom3D, PHANTOM_A, PHANTOM_B, sample_random_geometry
@@ -90,6 +90,8 @@ class BrainDatasetGenerator:
         self,
         output_dir: str,
         freq_hz: float = 1e9,
+        freq_low_hz: Optional[float] = None,
+        freq_high_hz: Optional[float] = None,
         grid_size: int = 64,
         dx_mm: float = 3.0,
         n_tx: int = 8,
@@ -101,7 +103,20 @@ class BrainDatasetGenerator:
         self._output_dir = Path(output_dir)
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
-        self._freq_hz = freq_hz
+        # Frequency config: UWB mode if freq_low_hz/freq_high_hz given
+        if freq_low_hz is not None and freq_high_hz is not None:
+            if freq_high_hz <= freq_low_hz:
+                raise ValueError(f"freq_high_hz must be > freq_low_hz")
+            self._freq_low = float(freq_low_hz)
+            self._freq_high = float(freq_high_hz)
+            self._freq_hz = (freq_low_hz + freq_high_hz) / 2.0  # centre for tissue props
+            self._uwb_mode = True
+        else:
+            self._freq_low = None
+            self._freq_high = None
+            self._freq_hz = float(freq_hz)
+            self._uwb_mode = False
+
         self._N = grid_size
         self._dx = dx_mm * 1e-3
         self._n_tx = n_tx
@@ -127,9 +142,15 @@ class BrainDatasetGenerator:
             grid=self._grid,
         )
 
-        print(f"BrainDatasetGenerator ready:")
+        if self._uwb_mode:
+            bw = (self._freq_high - self._freq_low) / 1e9
+            print(f"BrainDatasetGenerator ready (UWB mode):")
+            print(f"  Band: {self._freq_low/1e9:.2f}–{self._freq_high/1e9:.2f} GHz  BW={bw:.2f} GHz")
+            print(f"  Tissue props at fc={self._freq_hz/1e9:.2f} GHz (centre frequency)")
+        else:
+            print(f"BrainDatasetGenerator ready:")
+            print(f"  Frequency: {self._freq_hz/1e9:.2f} GHz")
         print(f"  Grid: {grid_size}³, dx={dx_mm}mm, domain={grid_size*dx_mm:.0f}mm")
-        print(f"  Frequency: {freq_hz/1e9:.2f} GHz")
         print(f"  Antennas: {n_tx} elements, r={ring_radius_cells} cells")
         print(f"  Steps: {n_steps}, device: {self._device}")
         print(f"  Output: {self._output_dir}")
@@ -157,13 +178,21 @@ class BrainDatasetGenerator:
         fields = FieldSet(grid)
         boundary = MurABC3D(grid, fields.Hx, fields.Hy, fields.Hz)
 
-        # Modulated Gaussian pulse: carrier at fc, bandwidth ~500 MHz
-        sigma_t = 1.0 / (2.0 * math.pi * 0.5e9)  # 500 MHz bandwidth
-        waveform = ModulatedGaussian(
-            amplitude=1.0,
-            fc=self._freq_hz,
-            sigma=sigma_t,
-        )
+        if self._uwb_mode:
+            # UWB Gaussian monocycle: energy concentrated in [f_low, f_high]
+            waveform = UWBPulse(
+                amplitude=1.0,
+                f_low=self._freq_low,
+                f_high=self._freq_high,
+            )
+        else:
+            # Narrow-band: modulated Gaussian at fc, bandwidth ~fc/2
+            sigma_t = 1.0 / (2.0 * math.pi * (self._freq_hz * 0.5))
+            waveform = ModulatedGaussian(
+                amplitude=1.0,
+                fc=self._freq_hz,
+                sigma=sigma_t,
+            )
 
         sources = self._ring.build_sources(waveform, tx_idx, self._n_steps)
         sim = FDTD3D(grid, fields, boundary, sources, Ca=Ca, Cb=Cb, n_check=99999)
@@ -324,8 +353,21 @@ class BrainDatasetGenerator:
         signals_ref, mc_ref   = self._run_full_mimo(phantom_ref)
         signals_scattered = signals_total - signals_ref
 
-        # DAS image from scattered signals
-        das_image = self._ring.compute_das_image(signals_scattered)
+        # DAS image from scattered signals — pass phantom geometry for layered-medium delays
+        from .brain.tissue_library import TISSUES
+        head_geom = {
+            'cx_cells': geom.center[0],
+            'cy_cells': geom.center[1],
+            'layers': [
+                (geom.scalp_outer_r, 40.0),   # scalp
+                (geom.skull_outer_r, 13.1),   # skull cortical
+                (geom.skull_inner_r, 44.0),   # dura
+                (geom.csf_inner_r,   68.0),   # CSF
+                (geom.gray_matter_r, 52.7),   # gray matter
+                (geom.white_matter_r, 38.1),  # white matter
+            ],
+        }
+        das_image = self._ring.compute_das_image(signals_scattered, head_geometry=head_geom)
 
         # Bleed metadata
         bleed_center = bleed_config.center if bleed_config else (0, 0, 0)
@@ -354,6 +396,9 @@ class BrainDatasetGenerator:
             'bleed_volume_ml':    np.float32(bleed_volume_ml),
             # Simulation params
             'freq_hz':            np.float32(self._freq_hz),
+            'freq_low_hz':        np.float32(self._freq_low or self._freq_hz),
+            'freq_high_hz':       np.float32(self._freq_high or self._freq_hz),
+            'uwb_mode':           np.bool_(self._uwb_mode),
             'dx_mm':              np.float32(self._dx * 1e3),
             'grid_shape':         np.array([self._N, self._N, self._N], dtype=np.int32),
             'n_tx':               np.int32(self._n_tx),

@@ -213,13 +213,62 @@ class AntennaRing:
             raise RuntimeError("No signals recorded yet.")
         return self._signals.copy()
 
+    @staticmethod
+    def _ray_sphere_chord(
+        ax: float, ay: float, bx: float, by: float,
+        cx: float, cy: float, r: float
+    ) -> float:
+        """Length of chord that segment (a→b) cuts through circle of radius r."""
+        dx_ = bx - ax; dy_ = by - ay
+        seg_len = math.sqrt(dx_**2 + dy_**2) + 1e-30
+        ux, uy = dx_ / seg_len, dy_ / seg_len
+        ox, oy = ax - cx, ay - cy
+        b_c = ox * ux + oy * uy
+        c_c = ox**2 + oy**2 - r**2
+        disc = b_c**2 - c_c
+        if disc <= 0:
+            return 0.0
+        sq = math.sqrt(disc)
+        t0 = max(0.0, min(seg_len, -b_c - sq))
+        t1 = max(0.0, min(seg_len, -b_c + sq))
+        return max(0.0, t1 - t0)
+
+    def _travel_time_samples(
+        self,
+        ax_mm: float, ay_mm: float,
+        bx_mm: float, by_mm: float,
+        head_cx_mm: float, head_cy_mm: float,
+        eps_layers: list,   # [(r_mm, eps_r), ...] outermost to innermost
+    ) -> float:
+        """One-way travel time (samples) using analytic ray-sphere intersection."""
+        C0 = 3e8
+        total_d = math.sqrt((bx_mm - ax_mm)**2 + (by_mm - ay_mm)**2) + 1e-30
+        prev = 0.0; t = 0.0
+        for idx, (r_mm, eps) in enumerate(eps_layers):
+            co = self._ray_sphere_chord(ax_mm, ay_mm, bx_mm, by_mm,
+                                        head_cx_mm, head_cy_mm, r_mm)
+            if idx + 1 < len(eps_layers):
+                ri = eps_layers[idx + 1][0]
+                ci = self._ray_sphere_chord(ax_mm, ay_mm, bx_mm, by_mm,
+                                            head_cx_mm, head_cy_mm, ri)
+            else:
+                ci = 0.0
+            sc = max(0.0, co - ci)
+            t += (sc * 1e-3) / (C0 / math.sqrt(eps))
+            prev += sc
+        t += (max(0.0, total_d - prev) * 1e-3) / C0
+        return t / self._grid.dt
+
     def compute_das_image(
         self,
         signals: np.ndarray,
         image_size: int = 40,
-        c0: float = 3e8,
+        head_geometry: Optional[dict] = None,
     ) -> np.ndarray:
         """Delay-and-sum backprojection in the xy-plane at z=z_plane.
+
+        Uses analytic ray-sphere layered-medium travel times when head_geometry
+        is provided; falls back to free-space for non-head applications.
 
         Parameters
         ----------
@@ -227,45 +276,69 @@ class AntennaRing:
             Shape (N_tx, N_rx, N_steps) scattered signal (background-subtracted).
         image_size : int
             Number of pixels per side in the reconstructed image.
-        c0 : float
-            Wave speed in medium (m/s). Use effective speed if available.
+        head_geometry : dict, optional
+            {'cx_cells', 'cy_cells', 'layers': [(r_cells, eps_r), ...]} where
+            layers are listed outermost-to-innermost.  When None, free-space
+            c = 3e8 m/s is used (correct only for homogeneous media).
 
         Returns
         -------
         np.ndarray
             DAS power image, shape (image_size, image_size), dtype float32.
         """
+        from scipy.signal import hilbert
+
         dt = self._grid.dt
         dx = self._grid.dx
         Nx, Ny = self._grid.Nx, self._grid.Ny
+        N_steps = self._N_steps
 
-        # Image spans the full grid in x and y
+        x_px = np.linspace(0, (Nx - 1) * dx * 1e3, image_size)   # mm
+        y_px = np.linspace(0, (Ny - 1) * dx * 1e3, image_size)
+
+        ant_xy_mm = [(i * dx * 1e3, j * dx * 1e3) for i, j, _ in self._positions]
+
+        # Hilbert envelope — removes sign dependency
+        env = np.abs(hilbert(signals, axis=-1)).astype(np.float32)
+
+        # Build travel-time table: shape (N_ant, image_size, image_size)
+        tt = np.zeros((self._n, image_size, image_size), dtype=np.float32)
+
+        if head_geometry is not None:
+            cx_mm = head_geometry['cx_cells'] * dx * 1e3
+            cy_mm = head_geometry['cy_cells'] * dx * 1e3
+            eps_layers = [
+                (r_cells * dx * 1e3, eps)
+                for r_cells, eps in head_geometry['layers']
+            ]
+            for ai in range(self._n):
+                ax, ay = ant_xy_mm[ai]
+                for iy, py in enumerate(y_px):
+                    for ix, px in enumerate(x_px):
+                        tt[ai, iy, ix] = self._travel_time_samples(
+                            ax, ay, px, py, cx_mm, cy_mm, eps_layers
+                        )
+        else:
+            # Free-space fallback
+            C0 = 3e8
+            for ai in range(self._n):
+                ax, ay = ant_xy_mm[ai]
+                for iy, py in enumerate(y_px):
+                    for ix, px in enumerate(x_px):
+                        d = math.sqrt((px - ax)**2 + (py - ay)**2)
+                        tt[ai, iy, ix] = (d * 1e-3) / C0 / dt
+
+        # Vectorized DAS accumulation
         img = np.zeros((image_size, image_size), dtype=np.float64)
-        x_px = np.linspace(0, (Nx - 1) * dx, image_size)
-        y_px = np.linspace(0, (Ny - 1) * dx, image_size)
+        for tx in range(self._n):
+            for rx in range(self._n):
+                delay_map = np.rint(tt[tx] + tt[rx]).astype(np.int32)
+                valid = (delay_map >= 0) & (delay_map < N_steps)
+                delay_map = np.clip(delay_map, 0, N_steps - 1)
+                gathered = env[tx, rx][delay_map]
+                img += np.where(valid, gathered, 0.0)
 
-        # Pre-compute antenna positions in metres
-        ant_xy = np.array(
-            [(i * dx, j * dx) for i, j, _ in self._positions],
-            dtype=np.float64
-        )
-
-        for iy, py in enumerate(y_px):
-            for ix, px in enumerate(x_px):
-                pix = np.array([px, py])
-                acc = 0.0
-                for tx in range(self._n):
-                    d_tx = np.linalg.norm(pix - ant_xy[tx])
-                    for rx in range(self._n):
-                        d_rx = np.linalg.norm(pix - ant_xy[rx])
-                        delay_idx = int((d_tx + d_rx) / c0 / dt)
-                        if 0 <= delay_idx < self._N_steps:
-                            acc += float(signals[tx, rx, delay_idx])
-                img[iy, ix] = acc
-
-        # Squared envelope for power image
-        img = img ** 2
-        return img.astype(np.float32)
+        return (img ** 2).astype(np.float32)
 
     def __repr__(self) -> str:
         return (
