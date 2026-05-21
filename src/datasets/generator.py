@@ -273,10 +273,6 @@ class BrainDatasetGenerator:
             self._grid, self._freq_hz,
             geometry=geom, seed=seed
         )
-        phantom_ref = BrainPhantom3D(
-            self._grid, self._freq_hz,
-            geometry=geom, seed=seed + 100000
-        )
 
         bleed_config = None
         if label > 0:
@@ -285,20 +281,43 @@ class BrainDatasetGenerator:
             age = bleed_age or rng.choices(_BLEED_AGES, weights=_AGE_WEIGHTS)[0]
             size = bleed_size or rng.choices(_SIZE_CATS, weights=_SIZE_WEIGHTS)[0]
 
-            # Retry up to 5 seeds to find a valid placement
-            for attempt in range(5):
-                bleed_config = phantom_target.add_random_bleed(
-                    btype, age, size
+            # Try up to 50 (seed, size) combinations before giving up.
+            # First try the requested size; fall back to smaller sizes if the
+            # randomised geometry has a thin zone that doesn't fit.
+            size_fallback = {
+                'large': ['large', 'medium', 'small'],
+                'medium': ['medium', 'small'],
+                'small': ['small'],
+            }
+            for attempt in range(50):
+                # Vary both the geometry seed and the size on repeated failures
+                trial_geom_seed = geom_seed + attempt
+                trial_geom = sample_random_geometry(
+                    trial_geom_seed, self._N, self._dx * 1e3
                 )
-                if bleed_config is not None:
-                    break
                 phantom_target = BrainPhantom3D(
                     self._grid, self._freq_hz,
-                    geometry=geom, seed=seed + attempt + 1
+                    geometry=trial_geom, seed=seed + attempt
                 )
+                # Try each size from largest to smallest
+                for trial_size in size_fallback.get(size, [size]):
+                    bleed_config = phantom_target.add_random_bleed(
+                        btype, age, trial_size
+                    )
+                    if bleed_config is not None:
+                        geom = trial_geom  # use the geometry that worked
+                        break
+                if bleed_config is not None:
+                    break
 
             if bleed_config is None:
-                return None  # Placement failed; caller should retry
+                return None  # Genuinely impossible for this type — caller retries
+
+        # Rebuild reference phantom with the same winning geometry
+        phantom_ref = BrainPhantom3D(
+            self._grid, self._freq_hz,
+            geometry=geom, seed=seed + 100000
+        )
 
         # Run simulations
         signals_total, mc_total = self._run_full_mimo(phantom_target)
