@@ -26,39 +26,56 @@ CLASS_NAMES = ['Healthy','Epidural','Subdural','Intracerebral']
 OUT = Path('/kaggle/working/dib_figures')
 OUT.mkdir(exist_ok=True)
 
-# ── Locate dataset ──────────────────────────────────────────────────────
-for candidate in [
-    '/kaggle/input/data-part1/brain_haemorrhage_dataset',
-    '/kaggle/input/waveforge-brain-v1/brain_haemorrhage_dataset',
-]:
-    DATA_ROOT = Path(candidate)
-    if DATA_ROOT.exists(): break
-else:
-    for p in Path('/kaggle/input').glob('**/train'):
-        DATA_ROOT = p.parent; break
+# ── Locate dataset — search all possible locations ──────────────────────
+import glob as _glob
 
-TRAIN_DIR = DATA_ROOT / 'train'
-TEST_DIRS  = [DATA_ROOT / 'test_gpu0', DATA_ROOT / 'test_gpu1']
+# Find all .npz files anywhere under /kaggle/input
+print("Searching for dataset under /kaggle/input/ ...")
+all_npz = list(Path('/kaggle/input').rglob('*.npz'))
+print(f"Found {len(all_npz)} .npz files total")
+
+# Find the train folder (folder with most .npz files)
+from collections import Counter
+folder_counts = Counter(str(p.parent) for p in all_npz)
+for folder, count in sorted(folder_counts.items(), key=lambda x: -x[1]):
+    print(f"  {folder}: {count} files")
+
+# Use the folder with the most files as train, look for test_gpu* siblings
+train_folder = Path(sorted(folder_counts.items(), key=lambda x: -x[1])[0][0])
+DATA_ROOT = train_folder.parent
+TRAIN_DIR = train_folder
+TEST_DIRS = [DATA_ROOT / 'test_gpu0', DATA_ROOT / 'test_gpu1']
+print(f"\\nUsing TRAIN_DIR: {TRAIN_DIR}")
+print(f"Test dirs: {[str(t) for t in TEST_DIRS if t.exists()]}")
 
 def load_meta(p):
-    s = np.load(p, allow_pickle=True)
-    return {
-        'path':str(p), 'label':int(s['label']),
-        'bleed_type':str(s['bleed_type']), 'bleed_age':str(s['bleed_age']),
-        'radius_mm':float(s['bleed_radius_mm']), 'volume_ml':float(s['bleed_volume_ml']),
-        'skull_r':int(s['phantom_skull_inner_r']), 'gray_r':int(s['phantom_gray_r']),
-        'scalp_r':int(s['phantom_scalp_outer_r']), 'dt_s':float(s['dt_s']),
-    }
+    try:
+        s = np.load(p, allow_pickle=True)
+        return {
+            'path':        str(p),
+            'label':       int(s['label']),
+            'bleed_type':  str(s['bleed_type']),
+            'bleed_age':   str(s['bleed_age']),
+            'radius_mm':   float(s['bleed_radius_mm']),
+            'volume_ml':   float(s['bleed_volume_ml']),
+            'skull_r':     int(s['phantom_skull_inner_r']),
+            'gray_r':      int(s['phantom_gray_r']),
+            'scalp_r':     int(s['phantom_scalp_outer_r']),
+            'dt_s':        float(s['dt_s']),
+        }
+    except Exception as e:
+        return None   # skip corrupted files
 
 print("Loading metadata...")
-train_recs = [load_meta(p) for p in sorted(TRAIN_DIR.glob('*.npz'))]
+train_recs = [r for r in (load_meta(p) for p in sorted(TRAIN_DIR.glob('*.npz'))) if r is not None]
 test_recs  = []
 for td in TEST_DIRS:
-    if td.exists(): test_recs += [load_meta(p) for p in sorted(td.glob('*.npz'))]
+    if td.exists():
+        test_recs += [r for r in (load_meta(p) for p in sorted(td.glob('*.npz'))) if r is not None]
 
 df_train = pd.DataFrame(train_recs)
 df_test  = pd.DataFrame(test_recs)
-print(f"Train: {len(df_train)}  Test: {len(df_test)}")
+print(f"\\nTrain: {len(df_train)}  Test: {len(df_test)}")
 print(df_train['label'].value_counts().sort_index())
 """))
 
