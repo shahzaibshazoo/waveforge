@@ -11,7 +11,7 @@ cells.append(md("""# PhysioMIMO-Net: Physics-Informed MIMO Radar for Intracrania
 
 **Architecture:** Physics-split temporal branches + MIMO graph attention + Transformer encoder
 **Input:** Raw scattered MIMO radar signals (8×8×700) — no DAS images
-**Task:** 4-class classification (Healthy / Epidural / Subdural / Intracerebral) + bleed depth regression
+**Task:** 4-class classification (Healthy / Epidural / Subdural / Intracerebral) + bleed size regression
 **Dataset:** WaveForge Brain Haemorrhage FDTD Dataset v1.4 — 1,600 train / 374 test samples
 **Frequency:** UWB 0.5–1.5 GHz | Grid: 64³ at 3mm/cell | 8 antennas at 90mm radius
 
@@ -369,23 +369,7 @@ class BrainMIMODataset(Dataset):
         sig = s['signals_scattered'].astype(np.float32)   # (8,8,700)
         label = int(s['label'])
 
-        # Bleed depth from skull inner surface (mm)
-        # Epidural: center is between skull_inner and dura → depth ~0-9mm
-        # Subdural: center is between dura and CSF → depth ~9-18mm
-        # ICH: inside brain → depth >18mm
-        # Healthy: 0 (no bleed)
-        skull_inner_mm = float(s['phantom_skull_inner_r']) * float(s['dx_mm'])
-        if label > 0:
-            bleed_center_mm = s['bleed_center_mm']
-            bleed_dist = float(np.sqrt(np.sum((bleed_center_mm[:2] - skull_inner_mm)**2)))
-            # depth = distance of bleed center from head center minus skull radius
-            head_center = float(s['phantom_skull_inner_r']) * float(s['dx_mm'])
-            bleed_dist_from_center = float(np.linalg.norm(
-                bleed_center_mm[:2] - np.array([head_center, head_center])
-            ))
-            depth = max(0.0, skull_inner_mm - bleed_dist_from_center)
-        else:
-            depth = 0.0
+        radius = float(s['bleed_radius_mm'])
 
         # Per-sample normalisation (zero-mean, unit-std across all values)
         mu, sd = sig.mean(), sig.std() + 1e-12
@@ -396,7 +380,7 @@ class BrainMIMODataset(Dataset):
             perm = np.random.permutation(8)
             sig = sig[perm][:, perm, :]
 
-        return torch.tensor(sig), torch.tensor(label, dtype=torch.long), torch.tensor(depth, dtype=torch.float32)
+        return torch.tensor(sig), torch.tensor(label, dtype=torch.long), torch.tensor(radius, dtype=torch.float32)
 
 
 # ── Build splits ────────────────────────────────────────────────────────
@@ -437,8 +421,7 @@ cells.append(code("""\
 # W3 [200-700]: deep ICH (1.13–3.96 ns)
 # W4 [80-200]:  NEW fine boundary window — epidural vs subdural discrimination
 #               (0.45–1.13 ns: exactly the skull-inner→dura gap)
-WINDOWS = [(0, 150), (50, 350), (200, 700), (80, 200)]
-WINDOW_KERNELS = [7, 7, 7, 3]   # W4 uses small kernel for fine temporal resolution
+WINDOWS = [(0, 150), (50, 350), (200, 700)]   # W4 uses small kernel for fine temporal resolution
 N_FREQ_BINS = 64   # FFT bins covering 0.5-1.5 GHz
 
 
@@ -459,49 +442,16 @@ class TemporalBranch(nn.Module):
         return self.net(x).squeeze(-1)   # (B, out_dim)
 
 
-class FrequencyBranch(nn.Module):
-    \"\"\"FFT-based spectral branch — learns which frequency bands distinguish EDH vs SDH.
-
-    Computes magnitude spectrum of all 64 TX-RX channels, focuses on the
-    0.5-1.5 GHz UWB band, and extracts discriminative spectral features.
-    \"\"\"
-    def __init__(self, out_dim=128, n_bins=64):
-        super().__init__()
-        self.n_bins = n_bins
-        self.net = nn.Sequential(
-            nn.Conv1d(64, 128, kernel_size=5, padding=2),
-            nn.BatchNorm1d(128), nn.GELU(),
-            nn.Conv1d(128, out_dim, kernel_size=3, padding=1),
-            nn.BatchNorm1d(out_dim), nn.GELU(),
-            nn.AdaptiveAvgPool1d(1),
-        )
-
-    def forward(self, x):
-        # x: (B, 8, 8, 700) → (B, 64, 700)
-        B = x.size(0)
-        x_flat = x.view(B, 64, 700).float()
-        # FFT magnitude spectrum
-        fft_mag = torch.fft.rfft(x_flat, dim=-1).abs()   # (B, 64, 351)
-        # Focus on bins 17-81: corresponds to 0.5-1.5 GHz at our sampling rate
-        # (fs = 1/dt = 1/5.66e-12 = 176.7 GHz; bin k = k * fs/700)
-        # bin for 0.5 GHz = round(0.5e9 * 700 / 176.7e9) = 2; 1.5GHz = 6
-        # But we want more resolution — use the full spectrum, let model learn
-        fft_sel = fft_mag[:, :, :self.n_bins]            # (B, 64, n_bins)
-        return self.net(fft_sel).squeeze(-1)             # (B, out_dim)
-
 
 class PhysicsTemporalEncoder(nn.Module):
     \"\"\"Four parallel temporal branches + frequency branch → concat → project.\"\"\"
     def __init__(self, embed_dim=256):
         super().__init__()
         self.branches = nn.ModuleList([
-            TemporalBranch(w1 - w0, kernel=k)
-            for (w0, w1), k in zip(WINDOWS, WINDOW_KERNELS)
+            TemporalBranch(w1 - w0) for w0, w1 in WINDOWS
         ])
-        self.freq_branch = FrequencyBranch(out_dim=128, n_bins=N_FREQ_BINS)
-        # 4 temporal + 1 freq = 5 * 128
         self.proj = nn.Sequential(
-            nn.Linear(128 * 5, embed_dim),
+            nn.Linear(128 * 3, embed_dim),
             nn.LayerNorm(embed_dim), nn.GELU(),
         )
 
@@ -511,7 +461,6 @@ class PhysicsTemporalEncoder(nn.Module):
         feats = []
         for (w0, w1), branch in zip(WINDOWS, self.branches):
             feats.append(branch(x_flat[:, :, w0:w1]))
-        feats.append(self.freq_branch(x))
         return self.proj(torch.cat(feats, dim=-1))   # (B, embed_dim)
 
 
@@ -566,15 +515,15 @@ class PhysioMIMONet(nn.Module):
             nn.Dropout(dropout),
         )
         self.classifier = nn.Linear(embed_dim, n_classes)
-        self.depth_head = nn.Linear(embed_dim, 1)   # bleed depth from skull (mm)
+        self.regressor  = nn.Linear(embed_dim, 1)   # bleed radius (mm)
 
     def forward(self, x):
         t_feat = self.temporal(x)
         a_feat = self.antenna(x)
         fused  = self.fusion(torch.cat([t_feat, a_feat], dim=-1))
         logits = self.classifier(fused)
-        depth  = self.depth_head(fused).squeeze(-1)   # depth from skull (mm)
-        return logits, depth
+        radius = self.regressor(fused).squeeze(-1)
+        return logits, radius
 
 
 # ── Model summary ────────────────────────────────────────────────────────
@@ -729,7 +678,7 @@ cells.append(code("""\
 model.load_state_dict(torch.load(CHECKPOINT, map_location=DEVICE))
 model.eval()
 
-all_preds, all_labels, all_probs, all_depth_true, all_depth_pred = [], [], [], [], []
+all_preds, all_labels, all_probs, all_radii_true, all_radii_pred = [], [], [], [], []
 
 with torch.no_grad():
     for sigs, labels, radii in test_dl:
@@ -740,8 +689,8 @@ with torch.no_grad():
         all_preds.extend(preds)
         all_labels.extend(labels.numpy())
         all_probs.extend(probs)
-        all_depth_true.extend(radii.numpy())
-        all_depth_pred.extend(pred_r.cpu().numpy())
+        all_radii_true.extend(radii.numpy())
+        all_radii_pred.extend(pred_r.cpu().numpy())
 
 all_preds  = np.array(all_preds)
 all_labels = np.array(all_labels)
@@ -968,8 +917,8 @@ plt.show()
 cells.append(md("## Cell 19: Bleed Depth from Skull Regression Analysis"))
 cells.append(code("""\
 bleed_mask = np.array(all_labels) > 0
-radii_true = np.array(all_depth_true)[bleed_mask]
-radii_pred = np.array(all_depth_pred)[bleed_mask]
+radii_true = np.array(all_radii_true)[bleed_mask]
+radii_pred = np.array(all_radii_pred)[bleed_mask]
 
 mae = np.abs(radii_true - radii_pred).mean()
 corr = np.corrcoef(radii_true, radii_pred)[0,1]
@@ -1025,7 +974,7 @@ print()
 total_params = sum(p.numel() for p in model.parameters())
 print(f"  Model Parameters:       {total_params:,}")
 print(f"  Training epochs:        {len(history['train_loss'])}")
-print(f"  Bleed depth MAE:        {mae:.2f} mm (EDH:0-9mm, SDH:9-18mm, ICH:>18mm)")
+print(f"  Bleed radius MAE:       {mae:.2f} mm")
 print("=" * 60)
 print()
 print("Architecture summary:")
@@ -1037,12 +986,12 @@ print("           W3 [200-700]: deep ICH (1.13–3.96 ns)")
 print("  Branch 2 MIMO Attention: per-antenna embedding + 2-layer Transformer")
 print("           Geometric positional encoding (antenna ring angles)")
 print("  Fusion:  concat + LayerNorm + GELU projection")
-print("  Outputs: 4-class softmax + bleed depth from skull regression (NEW)")
+print("  Outputs: 4-class softmax + bleed radius regression")
 print()
 print("Key novelties for publication:")
 print("  1. Physics-informed temporal windows (not learned blind)")
 print("  2. Geometric positional encoding of antenna array")
-print("  3. Multi-task learning: depth-from-skull regression (EDH:0-9mm / SDH:9-18mm forces anatomical depth encoding)")
+print("  3. Multi-task learning (classification + localisation)")
 print("  4. No DAS — end-to-end from raw radar to diagnosis")
 """))
 
