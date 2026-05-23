@@ -414,15 +414,19 @@ for epoch in range(1, EPOCHS + 1):
             for sigs, labels in dl:
                 sigs   = sigs.to(DEVICE, non_blocking=True)
                 labels = labels.to(DEVICE, non_blocking=True)
+                # model forward in fp16 (fast)
                 with torch.cuda.amp.autocast(enabled=(DEVICE=='cuda')):
                     if train:
                         logits, proj = model(sigs, return_proj=True)
-                        fl   = focal_loss(logits, labels)
-                        sc   = supcon_loss(proj, labels)
-                        loss = fl + SUPCON_WEIGHT * sc
                     else:
                         logits = model(sigs)
-                        loss   = focal_loss(logits, labels)
+                # loss in fp32 (stable) — outside autocast to avoid NaN
+                fl = F.cross_entropy(logits.float(), labels, label_smoothing=0.05)
+                if train:
+                    sc   = supcon_loss(proj, labels)
+                    loss = fl + SUPCON_WEIGHT * sc
+                else:
+                    loss = fl
                 if train:
                     optimizer.zero_grad()
                     scaler.scale(loss).backward()
