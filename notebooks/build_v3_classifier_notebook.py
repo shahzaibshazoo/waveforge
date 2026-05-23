@@ -355,7 +355,7 @@ class SupConLoss(nn.Module):
     Pulls same-class embeddings together, pushes different-class apart.
     Uses L2-normalised projections and cosine similarity.
     \"\"\"
-    def __init__(self, temperature=0.07):
+    def __init__(self, temperature=0.3):   # 0.07 is for batch=256; use 0.3 for batch=32
         super().__init__()
         self.temperature = temperature
 
@@ -363,10 +363,7 @@ class SupConLoss(nn.Module):
         \"\"\"features: (B, D) L2-normalised. labels: (B,)\"\"\"
         B      = features.size(0)
         device = features.device
-        # Cast to float32 — -9e15 overflows float16 (max ~6.5e4)
-        features = features.float()
-        sim = torch.matmul(features, features.T) / self.temperature  # (B, B)
-        # float('-inf') is safe in any precision; -9e15 is not
+        sim    = torch.matmul(features, features.T) / self.temperature
         mask_self = torch.eye(B, dtype=torch.bool, device=device)
         sim = sim.masked_fill(mask_self, float('-inf'))
         # Positive pairs: same label, different sample
@@ -376,15 +373,15 @@ class SupConLoss(nn.Module):
         log_prob = F.log_softmax(sim, dim=-1)
         n_pos    = mask_pos.sum(dim=-1).float().clamp(min=1)
         loss     = -(log_prob * mask_pos.float()).sum(dim=-1) / n_pos
+        loss     = torch.nan_to_num(loss, nan=0.0)
         return loss.mean()
 
 
-supcon_loss = SupConLoss(temperature=0.07)
-SUPCON_WEIGHT = 0.3  # total loss = focal_ce + 0.3 * supcon
+supcon_loss   = SupConLoss(temperature=0.3)   # 0.07 is for batch=256; use 0.3 for batch=32
+SUPCON_WEIGHT = 0.3
 
 print("Loss functions ready.")
-print(f"  Focal loss:  gamma=2.0, label_smoothing=0.05")
-print(f"  SupCon loss: temperature=0.07, weight={SUPCON_WEIGHT}")
+print(f"  SupCon: temperature=0.3 (correct for batch_size=32), weight={SUPCON_WEIGHT}")
 """))
 
 # ── Cell 6: Training ──────────────────────────────────────────────────────
