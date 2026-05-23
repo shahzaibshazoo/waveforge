@@ -439,7 +439,8 @@ cells.append(code("""\
 # Hook into the cross-window self-attention to see which window pairs interact most
 attn_store = {}
 def hook_fn(module, inp, out):
-    if isinstance(out, tuple): attn_store['weights'] = out[1].detach().cpu()
+    if isinstance(out, tuple) and out[1] is not None:
+        attn_store['weights'] = out[1].detach().cpu()
 hook = model.temporal.cross_attn.register_forward_hook(hook_fn)
 
 fig, axes = plt.subplots(1, 4, figsize=(14, 3))
@@ -454,12 +455,16 @@ for lbl in range(4):
     with torch.no_grad():
         _ = model(sig)
     if 'weights' in attn_store:
-        w = attn_store['weights'][0].mean(0).numpy()  # (3, 3) mean over heads
+        w = attn_store['weights'][0].numpy()  # (3, 3) — already head-averaged, do NOT .mean(0)
         sns.heatmap(w, ax=axes[lbl], cmap='YlOrRd', vmin=0, vmax=w.max(),
                     xticklabels=window_labels, yticklabels=window_labels,
                     annot=True, fmt='.2f', annot_kws={'size':8})
         axes[lbl].set_title(CLASS_NAMES[lbl])
         axes[lbl].tick_params(axis='both', labelsize=7)
+    else:
+        axes[lbl].text(0.5, 0.5, 'No weights\ncaptured',
+                       ha='center', va='center', transform=axes[lbl].transAxes)
+        axes[lbl].set_title(CLASS_NAMES[lbl])
 
 hook.remove()
 plt.suptitle('Cross-Window Attention Weights — how temporal windows interact per class',
