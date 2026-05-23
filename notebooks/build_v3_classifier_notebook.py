@@ -303,6 +303,7 @@ class PhysioMIMONetV3(nn.Module):
             nn.LayerNorm(embed_dim), nn.GELU(), nn.Dropout(dropout * 0.5),
         )
         self.classifier = nn.Linear(embed_dim, n_classes)
+        # proj_head always runs in fp32 — fused.float() before entering
         self.proj_head  = nn.Sequential(
             nn.Linear(embed_dim, 128), nn.GELU(), nn.Linear(128, 128))
 
@@ -314,7 +315,8 @@ class PhysioMIMONetV3(nn.Module):
         fused  = self.fusion(torch.cat([ms, tw, fq, an], dim=-1))
         logits = self.classifier(fused)
         if return_proj:
-            proj = F.normalize(self.proj_head(fused), dim=-1)
+            # fused.float() ensures proj_head and SupCon backward are fully fp32
+            proj = F.normalize(self.proj_head(fused.float()), dim=-1)
             return logits, proj
         return logits
 
