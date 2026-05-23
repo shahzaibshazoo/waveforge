@@ -360,10 +360,12 @@ class SupConLoss(nn.Module):
         \"\"\"features: (B, D) L2-normalised. labels: (B,)\"\"\"
         B      = features.size(0)
         device = features.device
-        sim    = torch.matmul(features, features.T) / self.temperature  # (B, B)
-        # Mask out self-similarity
+        # Cast to float32 — -9e15 overflows float16 (max ~6.5e4)
+        features = features.float()
+        sim = torch.matmul(features, features.T) / self.temperature  # (B, B)
+        # float('-inf') is safe in any precision; -9e15 is not
         mask_self = torch.eye(B, dtype=torch.bool, device=device)
-        sim = sim.masked_fill(mask_self, -9e15)
+        sim = sim.masked_fill(mask_self, float('-inf'))
         # Positive pairs: same label, different sample
         mask_pos = (labels.unsqueeze(1) == labels.unsqueeze(0)) & ~mask_self
         if not mask_pos.any():
