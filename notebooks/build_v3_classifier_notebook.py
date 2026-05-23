@@ -396,10 +396,10 @@ PATIENCE   = 15
 CHECKPOINT = '/kaggle/working/physio_v3_best.pt'
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
-# Warm restarts: T_0=50 epochs first cycle, then 50 more
 scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
     optimizer, T_0=50, T_mult=1, eta_min=1e-5)
-scaler = torch.cuda.amp.GradScaler(enabled=(DEVICE=='cuda'))
+# No autocast/GradScaler: SupCon + autocast are incompatible regardless of .float() casts.
+# autocast overrides dtype inside model.forward; only fp32 training is reliable here.
 
 history = {'train_loss':[],'val_loss':[],'train_acc':[],'val_acc':[]}
 best_val_acc = 0.0; no_improve = 0
@@ -416,25 +416,25 @@ for epoch in range(1, EPOCHS + 1):
             for sigs, labels in dl:
                 sigs   = sigs.to(DEVICE, non_blocking=True)
                 labels = labels.to(DEVICE, non_blocking=True)
-                # model forward in fp16 (fast)
-                with torch.cuda.amp.autocast(enabled=(DEVICE=='cuda')):
-                    if train:
-                        logits, proj = model(sigs, return_proj=True)
-                    else:
-                        logits = model(sigs)
-                # loss in fp32 (stable) — outside autocast to avoid NaN
-                fl = F.cross_entropy(logits.float(), labels, label_smoothing=0.05)
+
+                if train:
+                    logits, proj = model(sigs, return_proj=True)
+                else:
+                    logits = model(sigs)
+
+                fl = F.cross_entropy(logits, labels, label_smoothing=0.05)
                 if train:
                     sc   = supcon_loss(proj, labels)
                     loss = fl + SUPCON_WEIGHT * sc
                 else:
                     loss = fl
+
                 if train:
                     optimizer.zero_grad()
-                    scaler.scale(loss).backward()
-                    scaler.unscale_(optimizer)
+                    loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                    scaler.step(optimizer); scaler.update()
+                    optimizer.step()
+
                 tot_loss    += loss.item() * len(labels)
                 tot_correct += (logits.argmax(1) == labels).sum().item()
                 tot_n       += len(labels)
