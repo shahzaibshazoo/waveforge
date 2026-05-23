@@ -340,7 +340,8 @@ Temperature τ=0.07 sharpens the distribution.
 """))
 cells.append(code("""\
 def focal_loss(logits, labels, gamma=2.0, label_smoothing=0.05):
-    \"\"\"Focal loss with label smoothing. Down-weights confident correct predictions.\"\"\"
+    \"\"\"Focal loss. Cast to float32 — torch.exp(-ce) is unstable in float16.\"\"\"
+    logits = logits.float()
     ce = F.cross_entropy(logits, labels, label_smoothing=label_smoothing, reduction='none')
     p_t = torch.exp(-ce)
     return ((1 - p_t) ** gamma * ce).mean()
